@@ -3,6 +3,8 @@ using System.Net.Sockets;
 using FluentAssertions;
 using Mauime.WebHostPatch;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui.Hosting;
 using Xunit;
@@ -14,8 +16,12 @@ namespace Mauime.Tests;
 ///
 /// That is the point of these tests as much as the coverage. Xamarinme.WebHostPatch existed because
 /// ASP.NET Core 2.2 on Mono needed two forks of Microsoft's code to run a web host at all; the claim
-/// that .NET 10 needs neither is worth more when a server really does start, bind and answer than
-/// when it is asserted in a comment.
+/// that the patches are no longer needed is worth more when a server really does start, bind and
+/// answer than when it is asserted in a comment.
+///
+/// What these cannot cover is the platform question that matters most: ASP.NET Core here comes from
+/// netstandard2.0 packages precisely so it can run on Android and iOS, and a net10.0 test project
+/// cannot prove that. Only a device can.
 ///
 /// Everything binds loopback on port 0, so the tests take a free port from the operating system and
 /// never reach the network.
@@ -35,7 +41,7 @@ public class WebHostTests
     }
 
     private static Action<MauimeWebHostOptions> Responds(string body) => options =>
-        options.ConfigureApplication = app => app.MapGet("/", () => body);
+        options.ConfigureApplication = app => app.Run(context => context.Response.WriteAsync(body));
 
     [Fact]
     public void UseMauimeWebHost_registers_a_singleton_that_is_not_started()
@@ -169,9 +175,11 @@ public class WebHostTests
     {
         await using var host = Create(options =>
         {
-            options.ConfigureBuilder = builder => builder.Services.AddSingleton(new Greeting("configured"));
-            options.ConfigureApplication = app => app.MapGet("/",
-                (Greeting greeting) => greeting.Text);
+            options.ConfigureBuilder = builder =>
+                builder.ConfigureServices(services => services.AddSingleton(new Greeting("configured")));
+            options.ConfigureApplication = app => app.Run(context =>
+                context.Response.WriteAsync(
+                    app.ApplicationServices.GetRequiredService<Greeting>().Text));
         });
 
         var address = await host.StartAsync(TestContext.Current.CancellationToken);

@@ -53,10 +53,22 @@ them:
   `Microsoft.Extensions.Primitives` 5.0 had deleted, so a fork of Primitives stamped **5.9.0.0** was
   shipped to outrank the real one at bind time.
 
-Neither cause survives on .NET 10, and neither fork came across. Running Kestrel inside a MAUI app
-now needs a `Microsoft.AspNetCore.App` framework reference and nothing else — **this package has no
-NuGet dependencies at all**. What is left is the part that was never the patch: starting and
-stopping the thing from app code, and knowing what address to show the user.
+Neither fork came across, but not because the approach changed. ASP.NET Core still comes from **netstandard2.0 packages**, exactly as it did on Xamarin, because that is the only
+route that works: the `Microsoft.AspNetCore.App` shared framework has **no runtime pack for android,
+ios or maccatalyst**, so a framework reference compiles a library and then fails the consuming app
+with `NETSDK1082`.
+
+What changed is the version and the patching:
+
+- The packages are the **2.3.x servicing line**, not 2.2.0, so there are no known advisories.
+- `InplaceStringBuilder` is **fixed upstream** — `Microsoft.Net.Http.Headers` 2.3.11 no longer
+  references it — so the forked Primitives is gone.
+- The `CancelKeyPress` problem is **avoided by construction**: that call lives in `RunAsync`, and
+  this starts and stops the host explicitly instead. The generic host's `ConsoleLifetime` is not
+  involved either.
+
+What is left is the part that was never the patch: starting and stopping the thing from app code,
+and knowing what address to show the user.
 
 If you are on `Xamarinme.WebHostPatch` 1.0.0, note that it pins ASP.NET Core 2.2.0, which carries a
 critical advisory in `Microsoft.AspNetCore.Server.Kestrel.Core`

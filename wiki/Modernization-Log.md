@@ -104,7 +104,8 @@ is still unambiguous. Four were settled by building, not by reading:
   depending on Controls.
 - **`Mauime.WebHostPatch` needs no packages at all.** `WebApplication.CreateSlimBuilder()` plus
   `UseKestrel` compiles clean against `net10.0-android` with a `Microsoft.AspNetCore.App` framework
-  reference and nothing else. That is the Xamarin-era fork's entire reason for existing, gone.
+  reference and nothing else. **This conclusion was wrong**, and Phase 6 explains why: the probe
+  built a library, and the framework reference only fails when an *app* needs a runtime pack.
 - **Android generates a public `Resource` class into every library**, even one with no Android
   resources, and it landed in all four packages' public surface. Turned off with
   `AndroidGenerateResourceDesigner=false`. Blazorme had to live with the equivalent Razor wart;
@@ -380,6 +381,85 @@ decision is not to deprecate.
 - **No deprecations.** The `Xamarinme.*` packages stay on nuget.org as they are.
 - **Platform-agnostic tests only.** Unit tests for the shared slices plus the metadata API baseline;
   no device test harness.
+
+## Phase 6 — the demo app, and a correction
+
+One MAUI app replaces Xamarinme's three Xamarin.Forms solutions across 17 projects: four tabs, one
+per library, on Syncfusion's `SfTabView` with ReactiveUI view models. It is in the solution and
+deliberately out of CI.
+
+### Mauime.WebHostPatch was rebuilt, because Phase 3 got it wrong
+
+Phase 3 rebuilt the library on `WebApplication` and a `Microsoft.AspNetCore.App` framework
+reference, and recorded that "a framework reference is all you need on .NET 10". **That is false on
+every mobile platform**, and it made the package a trap: it would install into a MAUI app and break
+the Android build with `NETSDK1082`.
+
+The mistake was a verification one. The Phase 1 probe compiled a *library* targeting
+`net10.0-android` against the ASP.NET Core reference assemblies, which works for any target
+framework, and I concluded the capability was there. Deployment needs a **runtime pack**, and
+`Microsoft.AspNetCore.App.Runtime.android-arm64`, `.ios-arm64` and `.maccatalyst-x64` do not exist —
+they 404 on nuget.org. Nothing failed until an *app* was built, in this phase. A reference assembly
+is not a deployment, and "it compiles" is not "it runs".
+
+The fix is to do what Xamarinme did, because it was right: **ASP.NET Core as netstandard2.0
+packages**, which are copied into the app like any assembly and need no runtime pack. That is the
+whole reason the original worked on Xamarin, and the author's write-up says so directly — Xamarin
+supported netstandard2.0, so the 2.2 line was the last one it could consume.
+
+What improves on the original:
+
+- **The 2.3.x servicing line instead of 2.2.0**, which is advisory-clean. 2.2.0 carries a critical
+  Kestrel advisory and a moderate IIS one.
+- **The Primitives fork is gone.** `Microsoft.Net.Http.Headers` 2.3.11 no longer references
+  `InplaceStringBuilder`, so there is nothing left to shadow. Checked by grepping the assemblies —
+  after the first attempt used `strings`, which is not installed on this machine and reported zero
+  for everything including the 2.2.0 assemblies that provably contain it. The instrument check
+  caught two false findings.
+- **The `WebHostExtensions` fork is unnecessary.** `Console.CancelKeyPress` is still called in
+  2.3.11, but from `RunAsync`; starting and stopping the host explicitly never enters that path, and
+  blocking until shutdown is not what an app wants. The generic host's `ConsoleLifetime` is not
+  involved either.
+
+Verified by building: a `net10.0-android` MAUI app consuming the netstandard2.0 web library builds
+clean with zero warnings and no runtime pack, and the demo app now builds for all four platforms.
+Not verified: that it *runs* on a device. That needs hardware.
+
+### ReactiveUI 24 is not the ReactiveUI anyone remembers
+
+Three surprises, each found by a failure rather than by reading:
+
+- **It has dropped System.Reactive** and reimplemented the operators on its own primitives. Adding
+  Rx.NET alongside makes every `Select`, `Merge` and `Subscribe` ambiguous, so it is ReactiveUI's
+  operators or Rx's, not both. `Signal.FromEventPattern` and `ObserveOn(ISequencer)` cover what the
+  demo needs.
+- **`ReactiveCommand<Unit, Unit>` is now `ReactiveCommand<RxVoid, RxVoid>`**, and `RxApp` is gone;
+  the UI-thread sequencer is supplied explicitly, which is better anyway.
+- **It must be initialized explicitly.** Without `RxAppBuilder.CreateReactiveUIBuilder()...BuildApp()`
+  the first `WhenAnyValue` throws and the app fail-fasts at startup with no output. ReactiveUI's own
+  error message suggests a call order that does not compile.
+
+`ReactiveUI.Maui` was not used: it requires `Microsoft.Maui.Controls` 10.0.100, and the installed
+workload's `$(MauiVersion)` is 10.0.20, so taking it would mean bumping MAUI across the repository
+to satisfy a demo. The core package has no MAUI dependency.
+
+### The demo really starts
+
+Building an app is not running one. The Windows head was launched and watched: the first attempt
+fail-fasted with exit code `0xC0000409` and no output, which was the missing ReactiveUI
+initialization. A stock MAUI template app was run first to establish that the environment was not at
+fault. After the fix it stays up, which exercises the configuration load, the DI graph, all four
+view models, the Syncfusion XAML and the ReactiveUI initialization.
+
+### CI nearly tested nothing
+
+The first version of the test step passed `-warnaserror` to `dotnet test`. MTP forwards flags it
+does not recognise to the test executable, which ran **zero tests**. It exits 5, so the job would
+have failed rather than passing silently — but the lesson stands, and the comment in `ci.yml` now
+names the specific mistake rather than the general rule.
+
+CI builds the four libraries by name rather than the solution, because the demo is in the solution
+and out of CI.
 
 ## Settled, and not to be reopened
 

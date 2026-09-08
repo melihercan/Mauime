@@ -68,9 +68,14 @@ Since .NET 8 the `UseMaui*` properties no longer add the package reference impli
 so with **MA002** if you leave it out.
 
 `Mauime.Configuration` adds `Microsoft.Extensions.Configuration.Json` 10.0.0, pinned to match the
-`Microsoft.Extensions.Configuration` that `Microsoft.Maui.Core` already resolves. It is the only
-NuGet dependency in the repository beyond MAUI itself. `Mauime.WebHostPatch` declares a
-`Microsoft.AspNetCore.App` framework reference and **no packages at all**.
+`Microsoft.Extensions.Configuration` that `Microsoft.Maui.Core` already resolves.
+
+`Mauime.WebHostPatch` takes ASP.NET Core as **netstandard2.0 packages** — `Microsoft.AspNetCore.Server.Kestrel`
+2.3.12 and `Microsoft.AspNetCore.Hosting` 2.3.11 — and **never the `Microsoft.AspNetCore.App`
+framework reference**. There is no runtime pack for that framework on android, ios or maccatalyst,
+so a framework reference compiles the library and then fails the consuming app with `NETSDK1082`.
+A netstandard2.0 package is just an assembly and is copied in like any other, which is exactly why
+`Xamarinme.WebHostPatch` worked on Xamarin.
 
 ### The Android resource designer is turned off
 
@@ -242,12 +247,42 @@ requires a consumer's platform version to be at least the package's, so a projec
 of the .NET 10 SDK are fine.
 
 Dependencies are what they should be: `Microsoft.Maui.Core` everywhere, plus
-`Microsoft.Extensions.Configuration.Json` for `Mauime.Configuration` alone, and a
-`Microsoft.AspNetCore.App` framework reference rather than any package for `Mauime.WebHostPatch`.
+`Microsoft.Extensions.Configuration.Json` for `Mauime.Configuration` and the ASP.NET Core 2.3.x
+packages for `Mauime.WebHostPatch`.
 
 **This was checked by unzipping the four `.nupkg` files**, not by reading the build log — the id,
 version, icon, readme, copyright, tags, dependency groups, every slice, every XML file, and the icon
 compared byte for byte against `doc/me.png`.
+
+## The demo app
+
+`DemoApp/` is one MAUI app with a tab per library — Syncfusion's `SfTabView`, ReactiveUI view
+models, and `MauiProgram.cs` as the point of the whole thing: every library's setup in one short
+file.
+
+```powershell
+dotnet build DemoApp/DemoApp.csproj -f net10.0-windows10.0.19041.0
+```
+
+It is **in the solution and out of CI**, which is why `ci.yml` names the four library projects
+instead of building `Mauime.slnx`. It also sets `IsPackable=false`: an app is not a package, and
+without it `dotnet pack Mauime.slnx` fails with NU5026 trying to pack the demo.
+
+Two things about it are worth knowing before touching it:
+
+- **ReactiveUI 24 must be initialized explicitly.** `RxAppBuilder.CreateReactiveUIBuilder()`
+  → `.WithPlatformServices()` → `.WithCoreServices()` → `.BuildApp()`, before anything touches
+  `WhenAnyValue`. Without it the app fail-fasts at startup with no output. Note the order:
+  ReactiveUI's own error message suggests core-then-platform, which does not compile, because
+  `WithCoreServices` returns Splat's `IAppBuilder`.
+- **It uses `ReactiveUI`, not `ReactiveUI.Maui`.** The MAUI package wants
+  `Microsoft.Maui.Controls` 10.0.100 and the installed workload's `$(MauiVersion)` is 10.0.20, so
+  taking it would drag MAUI up across the repository for a demo. It also uses ReactiveUI's own
+  operators rather than Rx.NET: version 24 dropped `System.Reactive` and reimplemented them, and the
+  two sets collide on every `Select`, `Merge` and `Subscribe`.
+
+Building it is not running it. The Windows head has been launched and watched to start cleanly; the
+Android, iOS and Mac Catalyst heads are compile-verified only.
 
 ## CI
 

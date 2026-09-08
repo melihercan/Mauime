@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="DemoApp.MainPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:buttons="clr-namespace:Syncfusion.Maui.Toolkit.Buttons;assembly=Syncfusion.Maui.Toolkit"
+    xmlns:chips="clr-namespace:Syncfusion.Maui.Toolkit.Chips;assembly=Syncfusion.Maui.Toolkit"
+    xmlns:tabView="clr-namespace:Syncfusion.Maui.Toolkit.TabView;assembly=Syncfusion.Maui.Toolkit"
+    xmlns:vm="clr-namespace:DemoApp.ViewModels"
+    x:DataType="vm:MainViewModel"
+    Title="Mauime Demo">
+
+    <tabView:SfTabView TabWidthMode="SizeToContent">
+        <tabView:SfTabView.Items>
+
+            <!-- Mauime.Configuration -->
+            <tabView:SfTabItem Header="Configuration">
+                <tabView:SfTabItem.Content>
+                    <Grid BindingContext="{Binding Configuration}" RowDefinitions="Auto,*">
+                        <Label
+                            Margin="16,16,16,8"
+                            Text="Every key the configuration ended up with. Demo:Source shows the environment overlay having been applied on top of the base file."
+                            LineBreakMode="WordWrap" />
+
+                        <CollectionView Grid.Row="1" ItemsSource="{Binding Settings}">
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate x:DataType="vm:SettingRow">
+                                    <VerticalStackLayout Padding="16,6">
+                                        <Label FontAttributes="Bold" Text="{Binding Key}" />
+                                        <Label Text="{Binding Value}" />
+                                    </VerticalStackLayout>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
+                    </Grid>
+                </tabView:SfTabItem.Content>
+            </tabView:SfTabItem>
+
+            <!-- Mauime.Hosting -->
+            <tabView:SfTabItem Header="Hosting">
+                <tabView:SfTabItem.Content>
+                    <ScrollView BindingContext="{Binding Hosting}">
+                        <VerticalStackLayout Padding="16" Spacing="12">
+                            <Label
+                                Text="Without Mauime.Hosting this would say Production on every platform, always."
+                                LineBreakMode="WordWrap" />
+
+                            <chips:SfChip Text="{Binding EnvironmentName}" HorizontalOptions="Start" />
+
+                            <Label Text="{Binding IsDevelopment, StringFormat='IsDevelopment(): {0}'}" />
+                            <Label Text="{Binding Greeting, StringFormat='Demo:Greeting = {0}'}" />
+                            <Label Text="{Binding Source, StringFormat='Demo:Source = {0}'}" />
+
+                            <Label
+                                Margin="0,12,0,0"
+                                Text="These two still come from the platform - the wrapper only changes the name:"
+                                LineBreakMode="WordWrap" />
+                            <Label Text="{Binding ApplicationName, StringFormat='ApplicationName = {0}'}" />
+                            <Label Text="{Binding ContentRootPath, StringFormat='ContentRootPath = {0}'}" />
+                        </VerticalStackLayout>
+                    </ScrollView>
+                </tabView:SfTabItem.Content>
+            </tabView:SfTabItem>
+
+            <!-- Mauime.Nfc -->
+            <tabView:SfTabItem Header="NFC">
+                <tabView:SfTabItem.Content>
+                    <Grid BindingContext="{Binding Nfc}" RowDefinitions="Auto,Auto,*">
+                        <VerticalStackLayout Padding="16" Spacing="12">
+                            <HorizontalStackLayout Spacing="12">
+                                <buttons:SfButton Text="Start session" Command="{Binding Start}" />
+                                <buttons:SfButton Text="Stop session" Command="{Binding Stop}" />
+                            </HorizontalStackLayout>
+
+                            <Label Text="{Binding Status}" LineBreakMode="WordWrap" />
+                            <Label Text="{Binding TagId, StringFormat='Tag: {0}'}" />
+                        </VerticalStackLayout>
+
+                        <Label
+                            Grid.Row="1"
+                            Margin="16,0"
+                            Text="Records"
+                            FontAttributes="Bold" />
+
+                        <CollectionView Grid.Row="2" ItemsSource="{Binding Records}">
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate x:DataType="x:String">
+                                    <Label Padding="16,6" Text="{Binding .}" LineBreakMode="WordWrap" />
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
+                    </Grid>
+                </tabView:SfTabItem.Content>
+            </tabView:SfTabItem>
+
+            <!-- Mauime.WebHostPatch -->
+            <tabView:SfTabItem Header="Web host">
+                <tabView:SfTabItem.Content>
+                    <ScrollView BindingContext="{Binding WebHost}">
+                        <VerticalStackLayout Padding="16" Spacing="12">
+                            <Label
+                                Text="Kestrel, inside this app. On .NET 10 that needs a framework reference and nothing else - no patch, no forks."
+                                LineBreakMode="WordWrap" />
+
+                            <HorizontalStackLayout Spacing="12">
+                                <buttons:SfButton Text="Start server" Command="{Binding Start}" />
+                                <buttons:SfButton Text="Stop server" Command="{Binding Stop}" />
+                            </HorizontalStackLayout>
+
+                            <Label Text="{Binding Status}" LineBreakMode="WordWrap" />
+
+                            <Label
+                                FontAttributes="Bold"
+                                Text="{Binding Address}"
+                                IsVisible="{Binding IsRunning}" />
+                        </VerticalStackLayout>
+                    </ScrollView>
+                </tabView:SfTabItem.Content>
+            </tabView:SfTabItem>
+
+        </tabView:SfTabView.Items>
+    </tabView:SfTabView>
+
+</ContentPage>

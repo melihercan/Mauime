@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
 
 namespace Mauime.WebHostPatch;
 
@@ -9,6 +10,7 @@ public sealed class MauimeWebHostOptions
     /// The TCP port to listen on. 0, the default, lets the operating system choose one;
     /// <see cref="IMauimeWebHost.Address"/> reports which.
     /// </summary>
+    /// <remarks>Ports below 1024 are not available to an app on Android or iOS.</remarks>
     public int Port { get; set; }
 
     /// <summary>
@@ -19,14 +21,18 @@ public sealed class MauimeWebHostOptions
     public bool ListenOnAllInterfaces { get; set; } = true;
 
     /// <summary>
-    /// The content root. Defaults to <see cref="AppContext.BaseDirectory"/> rather than the current
-    /// directory, which on a mobile platform is not somewhere the app can rely on.
+    /// The content root. Defaults to <see cref="AppContext.BaseDirectory"/>.
     /// </summary>
+    /// <remarks>
+    /// Set explicitly because ASP.NET Core reads it from configuration and there is none here, so
+    /// it would otherwise be null and throw further in. That was one of the four problems
+    /// Xamarinme.WebHostPatch had to work around; supplying the value is the whole fix.
+    /// </remarks>
     public string ContentRootPath { get; set; } = AppContext.BaseDirectory;
 
-    /// <summary>Configures the builder before it is built — services, configuration, logging.</summary>
-    public Action<WebApplicationBuilder>? ConfigureBuilder { get; set; }
+    /// <summary>Configures the host builder before it is built — services, logging, Kestrel options.</summary>
+    public Action<IWebHostBuilder>? ConfigureBuilder { get; set; }
 
-    /// <summary>Configures the application before it starts — middleware and endpoints.</summary>
-    public Action<WebApplication>? ConfigureApplication { get; set; }
+    /// <summary>Configures the request pipeline.</summary>
+    public Action<IApplicationBuilder>? ConfigureApplication { get; set; }
 }

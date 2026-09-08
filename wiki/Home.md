@@ -3,8 +3,9 @@
 Libraries and plugins for .NET MAUI applications, ported from
 [Xamarinme](https://github.com/melihercan/Xamarinme) now that Xamarin is retired.
 
-**All four libraries are ported and packaged at `26.9.8`; nothing is published yet.** What remains
-is a demo app and publishing. The Xamarin sources were imported under `legacy/` for the
+**All four libraries are ported and packaged at `26.9.8`; nothing is published yet.** Publishing is
+what remains. `DemoApp/` is a single MAUI app with a tab per library, replacing Xamarinme's three
+Xamarin.Forms solutions across 17 projects. The Xamarin sources were imported under `legacy/` for the
 characterization phase and deleted once each library had been replaced — the history is the record.
 
 The `Xamarinme.*` packages stay on nuget.org exactly as they are, and are **not** deprecated. That

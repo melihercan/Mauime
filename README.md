@@ -3,8 +3,15 @@
 Libraries and plugins for .NET MAUI applications, ported from
 [Xamarinme](https://github.com/melihercan/Xamarinme) now that Xamarin is retired.
 
-**All four libraries are ported and packaged at `26.9.8`; nothing is published yet.** What remains
-is a demo app and publishing.
+**All four libraries are ported and packaged at `26.9.8`; nothing is published yet.** Publishing is
+what remains.
+
+`DemoApp/` is a single .NET MAUI app with a tab per library, replacing Xamarinme's three
+Xamarin.Forms solutions across 17 projects. Run it with:
+
+```powershell
+dotnet build DemoApp/DemoApp.csproj -f net10.0-windows10.0.19041.0
+```
 
 ## Planned packages
 

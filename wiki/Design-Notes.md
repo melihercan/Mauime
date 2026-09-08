@@ -75,8 +75,8 @@ All four are the same shape, and the shape was settled by building rather than b
 - **`Microsoft.Maui.Core`, not `Microsoft.Maui.Controls`.** Core carries `MauiAppBuilder`, the
   `LifecycleEvents` builders and `Microsoft.Maui.ApplicationModel`. `Microsoft.Maui.Essentials` has
   none of the first two. An NFC plugin has no business depending on Controls, and now does not.
-- **`Mauime.WebHostPatch` takes no packages**, only a `Microsoft.AspNetCore.App` framework
-  reference. That is enough for `WebApplication` and Kestrel on `net10.0-android`.
+- **`Mauime.WebHostPatch` takes ASP.NET Core as netstandard2.0 packages**, never the
+  `Microsoft.AspNetCore.App` framework reference — that framework has no mobile runtime pack.
 - **`net10.0` alongside the four platform frameworks.** It is what a non-platform project resolves,
   and for `Mauime.Nfc` it is where "this platform has no implementation" lives — the role
   `Xamarinme.Nfc` gave `netstandard2.0`.
@@ -148,11 +148,30 @@ The two forks existed for two Mono-era problems, and **both causes are gone**:
 2. `Console.CancelKeyPress` threw on Mono, so `ConsoleLifetime` and `WebHostExtensions.RunAsync`
    were forked to route around it.
 
-On .NET 10 a web host inside a MAUI app needs a `Microsoft.AspNetCore.App` framework reference and
-nothing else, verified by compiling `WebApplication` plus `UseKestrel` against `net10.0-android` and
-then by starting a real server in the tests. The package has **no NuGet dependencies**. What is left
-is the part that was never the patch: starting and stopping the server, and knowing what address to
-show the user.
+**The approach is unchanged, because it is the only one that works.** ASP.NET Core comes from
+netstandard2.0 packages — the 2.3.x servicing line — which are copied into the app like any
+assembly. That is precisely why `Xamarinme.WebHostPatch` ran on Xamarin.
+
+The modern-looking alternative does not work, and finding that out cost a phase. The
+`Microsoft.AspNetCore.App` shared framework **has no runtime pack for android, ios or maccatalyst** —
+those RIDs 404 on nuget.org. A framework reference therefore compiles a *library* against the
+reference assemblies quite happily and then fails the consuming *app* with `NETSDK1082`. Phase 3
+shipped exactly that mistake, because the Phase 1 probe that "verified" it built a library and never
+an app. A reference assembly is not a deployment.
+
+The two forks are still gone, but for narrower reasons than "the causes evaporated":
+
+1. `InplaceStringBuilder` is **fixed upstream**: `Microsoft.Net.Http.Headers` 2.3.11 no longer
+   references it. Verified by grepping both assemblies, after first checking the same grep finds it
+   in 2.2.0 — the first attempt used `strings`, which is not installed here, and silently reported
+   zero for everything.
+2. `CancelKeyPress` is **avoided by construction**. The call is still there in `Microsoft.AspNetCore.Hosting`
+   2.3.11, but it lives in `RunAsync`; this starts and stops the host explicitly, which never enters
+   that path and is what an app wants anyway. The generic host's `ConsoleLifetime` is not involved
+   either, since this is the web host.
+
+What is left is the part that was never the patch: starting and stopping the server, and knowing
+what address to show the user.
 
 The name is kept for continuity with the 30,366 downloads of `Xamarinme.WebHostPatch`, and is now a
 slight misnomer. That is a deliberate trade.

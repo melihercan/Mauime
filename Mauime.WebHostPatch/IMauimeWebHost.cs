@@ -5,18 +5,24 @@ namespace Mauime.WebHostPatch;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Xamarinme.WebHostPatch was two forks of Microsoft's code, because ASP.NET Core 2.2 on Mono needed
-/// them: <c>Console.CancelKeyPress</c> threw, so <c>ConsoleLifetime</c> and
-/// <c>WebHostExtensions.RunAsync</c> were reimplemented around it, and
-/// <c>Microsoft.Net.Http.Headers</c> 2.2.0 called an <c>InplaceStringBuilder</c> that
-/// <c>Microsoft.Extensions.Primitives</c> 5.0 had deleted, so a fork of Primitives stamped 5.9.0.0
-/// was shipped to win at bind time.
+/// The approach is Xamarinme.WebHostPatch's, because it is the only one that works: ASP.NET Core as
+/// <c>netstandard2.0</c> packages, which are copied into the app like any assembly. The
+/// <c>Microsoft.AspNetCore.App</c> *framework* has no runtime pack for android, ios or maccatalyst,
+/// so a framework reference compiles a library and then fails the consuming app.
 /// </para>
 /// <para>
-/// Neither cause survives on .NET 10, and neither fork came across. Running Kestrel inside a MAUI
-/// app now needs a <c>Microsoft.AspNetCore.App</c> framework reference and nothing else — no
-/// packages, no patches. What is left is the part that was never the patch: starting and stopping
-/// the thing from app code, and knowing what address to show the user.
+/// What is gone is the patching. Xamarinme needed two forks of Microsoft's code:
+/// <c>Microsoft.Net.Http.Headers</c> 2.2.0 called an <c>InplaceStringBuilder</c> that
+/// <c>Microsoft.Extensions.Primitives</c> 5.0 had deleted, so a fork of Primitives stamped 5.9.0.0
+/// was shipped to win at bind time; and <c>Console.CancelKeyPress</c> threw on Mono, so
+/// <c>ConsoleLifetime</c> and <c>WebHostExtensions.RunAsync</c> were reimplemented around it.
+/// </para>
+/// <para>
+/// The first is fixed upstream — 2.3.11 no longer references that type. The second is avoided by
+/// construction: this starts and stops the host explicitly rather than calling <c>RunAsync</c>,
+/// which is where the <c>CancelKeyPress</c> subscription lives, and uses the web host rather than
+/// the generic host, so <c>ConsoleLifetime</c> is never involved. Blocking until shutdown is not
+/// what an app wants anyway.
 /// </para>
 /// </remarks>
 public interface IMauimeWebHost : IAsyncDisposable

@@ -68,8 +68,10 @@
     type no consumer can use and none should see - the same shape of wart as Razor's generated
     _Imports classes in Blazorme, except that this one has a knob. None of these libraries carries
     Android resources; a library that later does must turn this back on for itself.
+
+    Scoped to the libraries: DemoApp is an Android *app*, and an app needs its resource designer.
   -->
-  <PropertyGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">
+  <PropertyGroup Condition="$(MSBuildProjectName.StartsWith('Mauime.')) AND !$(MSBuildProjectName.EndsWith('.Tests')) AND $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">
     <AndroidGenerateResourceDesigner>false</AndroidGenerateResourceDesigner>
   </PropertyGroup>
 

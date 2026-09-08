@@ -21,7 +21,9 @@ publishing.
   each multi-targeting `net10.0`, `net10.0-android`, `net10.0-ios`, `net10.0-maccatalyst` and
   `net10.0-windows10.0.19041.0`.
 - `Mauime.Tests/` — xUnit v3, one project for everything.
-- `.github/workflows/ci.yml` — build and test, with `-warnaserror`.
+- `DemoApp/` — one MAUI app with a tab per library. **In the solution, deliberately out of CI**,
+  which is why `ci.yml` names the four library projects rather than building the solution.
+- `.github/workflows/ci.yml` — build and test, with `-warnaserror` on the build step only.
 - `wiki/` — [Home](wiki/Home.md), [Building and Testing](wiki/Building-and-Testing.md),
   [Design Notes](wiki/Design-Notes.md), [Modernization Log](wiki/Modernization-Log.md).
 
@@ -34,10 +36,10 @@ without the same kind of evidence:
   `MauiAppBuilder`, the `LifecycleEvents` builders and `Microsoft.Maui.ApplicationModel`; Essentials
   has none of the first two. Since .NET 8 the `UseMaui*` properties do not add the package reference
   implicitly (MA002).
-- **`Mauime.WebHostPatch` takes no packages**, only a `Microsoft.AspNetCore.App` framework
-  reference. `WebApplication.CreateSlimBuilder()` plus `UseKestrel` compiles clean on
-  `net10.0-android` with nothing else — which is the Xamarin-era fork's whole reason for existing,
-  gone.
+- **`Mauime.WebHostPatch` takes ASP.NET Core as netstandard2.0 packages** (the 2.3.x servicing
+  line), never the `Microsoft.AspNetCore.App` framework reference. That framework has no runtime
+  pack for android, ios or maccatalyst, so referencing it compiles the library and then fails every
+  consuming mobile app with NETSDK1082.
 - **`AndroidGenerateResourceDesigner=false`** for android frameworks. Android otherwise generates a
   public `Resource` class into every library, resources or not, and it lands in the public surface.
 - The framework list lives once, as `$(MauimeTargetFrameworks)` in `Directory.Build.props`.
@@ -121,11 +123,13 @@ NdefLibrary was dead, this is live and first-party. Only `AddEmbeddedResourceJso
 throws `NotImplementedException` even though the interface declares it and the type reports
 `CanWrite`.
 
-**`Mauime.WebHostPatch`** has no NuGet dependencies and no forks — a `Microsoft.AspNetCore.App`
-framework reference is all a web host needs on .NET 10. Its tests start a real Kestrel on loopback;
-keep them that way, because the claim that no patch is needed is the whole point of the package.
-Note `ListenLocalhost(0)` is refused by Kestrel — bind `IPAddress.Loopback` explicitly for a dynamic
-port.
+**`Mauime.WebHostPatch`** uses the ASP.NET Core **2.3.x netstandard2.0 packages**, which is the only
+route that reaches Android and iOS. **Do not "modernise" it to `WebApplication` plus a framework
+reference** — that was tried, it compiles, and it breaks every consuming mobile app. Both of
+Xamarinme's forks are gone anyway: `InplaceStringBuilder` is fixed upstream in 2.3.11, and the
+`CancelKeyPress` call lives in `RunAsync`, which this never calls — it starts and stops the host
+explicitly, which is what an app wants. Its tests start a real Kestrel on loopback; keep them that
+way.
 
 ## XML documentation is generated and enforced
 

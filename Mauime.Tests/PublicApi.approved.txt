@@ -61,8 +61,8 @@ assembly Mauime.WebHostPatch
     method static Microsoft.Maui.Hosting.MauiAppBuilder UseMauimeWebHost(Microsoft.Maui.Hosting.MauiAppBuilder builder, System.Action<Mauime.WebHostPatch.MauimeWebHostOptions> configure = null)
   type Mauime.WebHostPatch.MauimeWebHostOptions : sealed class
     ctor .ctor()
-    property System.Action<Microsoft.AspNetCore.Builder.WebApplication> ConfigureApplication { get; set; }
-    property System.Action<Microsoft.AspNetCore.Builder.WebApplicationBuilder> ConfigureBuilder { get; set; }
+    property System.Action<Microsoft.AspNetCore.Builder.IApplicationBuilder> ConfigureApplication { get; set; }
+    property System.Action<Microsoft.AspNetCore.Hosting.IWebHostBuilder> ConfigureBuilder { get; set; }
     property System.Boolean ListenOnAllInterfaces { get; set; }
     property System.Int32 Port { get; set; }
     property System.String ContentRootPath { get; set; }
