@@ -272,8 +272,12 @@ jobs:
             # fail. This can itself publish if the original failure was client-side; the log makes
             # clear which request did what.
             echo "::group::Raw nuget.org response for $package"
+            # X-NuGet-Client-Version is required: without it nuget.org answers 400 "a client version
+            # '4.1.0' or higher is required" before it ever looks at the package, which says nothing
+            # about why the real push failed.
             curl -sS -X PUT \
               -H "X-NuGet-ApiKey: $NUGET_API_KEY" \
+              -H "X-NuGet-Client-Version: 6.0.0" \
               -F "package=@$package" \
               -D - \
               -w '\nHTTP %{http_code}\n' \
