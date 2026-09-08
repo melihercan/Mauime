@@ -10,18 +10,20 @@ are being replaced library by library. Nothing under `Mauime.*` has been publish
 
 | Package | Replaces | Status |
 |---|---|---|
-| `Mauime.Nfc` | `Xamarinme.Nfc` (never published) | Not started |
-| `Mauime.Configuration` | `Xamarinme.Configuration` 1.0.2 | Not started |
-| `Mauime.Hosting` | `Xamarinme.Hosting` 1.0.3 | Not started |
-| `Mauime.WebHostPatch` | `Xamarinme.WebHostPatch` 1.0.0 | Not started |
+| `Mauime.Nfc` | `Xamarinme.Nfc` (never published) | Project set up, no code yet |
+| `Mauime.Configuration` | `Xamarinme.Configuration` 1.0.2 | Project set up, no code yet |
+| `Mauime.Hosting` | `Xamarinme.Hosting` 1.0.3 | Project set up, no code yet |
+| `Mauime.WebHostPatch` | `Xamarinme.WebHostPatch` 1.0.0 | Project set up, no code yet |
+
+Each multi-targets `net10.0`, `net10.0-android`, `net10.0-ios`, `net10.0-maccatalyst` and
+`net10.0-windows10.0.19041.0`.
 
 The `Xamarinme.*` packages stay on nuget.org as they are. They are not deprecated: Xamarin retiring
 is what ended them, not a defect in the packages.
 
 ## Building
 
-Requires the **.NET 10 SDK**, plus the `android`, `ios`, `maccatalyst` and `maui-windows` workloads
-once the MAUI projects land.
+Requires the **.NET 10 SDK** and the `android`, `ios`, `maccatalyst` and `maui-windows` workloads.
 
 ```powershell
 dotnet build Mauime.slnx

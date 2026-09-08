@@ -89,6 +89,54 @@ NuGet advisory warnings, and `-warnaserror` turns advisories into errors. There 
 workflow yet; it arrives when `legacy/` goes. The warnings are deliberately left visible rather than
 suppressed with `NoWarn`.
 
+## Phase 1 — the MAUI skeleton
+
+Four library projects, no library code: `Mauime.Nfc`, `Mauime.Configuration`, `Mauime.Hosting` and
+`Mauime.WebHostPatch`, each multi-targeting `net10.0`, `net10.0-android`, `net10.0-ios`,
+`net10.0-maccatalyst` and `net10.0-windows10.0.19041.0`. Twenty assemblies, all building clean.
+
+The point of a skeleton phase is to settle the build questions while the answer to "did that work?"
+is still unambiguous. Four were settled by building, not by reading:
+
+- **`Microsoft.Maui.Core` is the right dependency**, not `Microsoft.Maui.Controls` and not
+  `Microsoft.Maui.Essentials`. Essentials gives `Platform.CurrentActivity` but has no
+  `MauiAppBuilder` and no `LifecycleEvents`; Core has all three. An NFC plugin has no business
+  depending on Controls.
+- **`Mauime.WebHostPatch` needs no packages at all.** `WebApplication.CreateSlimBuilder()` plus
+  `UseKestrel` compiles clean against `net10.0-android` with a `Microsoft.AspNetCore.App` framework
+  reference and nothing else. That is the Xamarin-era fork's entire reason for existing, gone.
+- **Android generates a public `Resource` class into every library**, even one with no Android
+  resources, and it landed in all four packages' public surface. Turned off with
+  `AndroidGenerateResourceDesigner=false`. Blazorme had to live with the equivalent Razor wart;
+  this one has a knob.
+- **iOS and Mac Catalyst library slices compile on Windows.** Only app builds and signing need a
+  Mac.
+
+`Directory.Build.props` and `Directory.Build.targets` were added at the root, with **empty shields
+under `legacy/`** so the imported sources keep building exactly as they did. Those two shields are
+the only files added under `legacy/`.
+
+### The baseline machinery now reaches the platform slices
+
+This was the claim Phase 0 made and could not test, since everything it covered was plain
+netstandard2.0. Making it true needed two changes:
+
+- one `MetadataLoadContext` **per assembly**, because an Android `System.Runtime` and an iOS
+  `System.Runtime` cannot share a simple-name resolver;
+- `Mauime.ReferencePaths.txt` beside every assembly, written from the `ReferencePath` item, because
+  a library build leaves its dependencies nowhere near `bin/`.
+
+Verified with a temporary type exposing `Android.Nfc.NfcAdapter`,
+`CoreNFC.NFCNdefReaderSession` and `Windows.Devices.SmartCards.SmartCardReader`: every slice rendered
+correctly, from a `net10.0` test project that can reference none of them. `MultiTargetingTests`
+caught the divergence at the same time, which is exactly its job.
+
+Also verified: a `net10.0` project referencing `Mauime.Nfc` resolves the `net10.0` slice byte for
+byte, never the Android one. That is why the platform slices can only be covered through metadata.
+
+74 tests, green in Debug and Release, 30 consecutive clean runs. The three new tests were each
+proven by breaking what they guard.
+
 ## Decisions taken before Phase 0
 
 - **Fresh git history.** Mauime does not carry Xamarinme's 153 commits.

@@ -28,6 +28,29 @@ libraries are still plain `netstandard2.0` and easy, means the baseline survives
 When a change is intentional, review the diff and copy `PublicApi.received.txt` from the test output
 directory over `PublicApi.approved.txt`, in the same commit. Never weaken the assertion.
 
+The baseline renders each Mauime library from its **`net10.0`** slice only. Dumping all five slices
+would make the approved file four times longer and mostly repetition, so `MultiTargetingTests` holds
+the platform slices to the neutral one instead: same public surface, every framework. An
+Android-only member added by accident — the easy mistake when half a plugin lives behind
+`#if ANDROID` — fails there. A platform-specific member added *on purpose* means rewriting that test
+to name the exception, in the commit that adds it; it must not be weakened into a subset check.
+
+Two things make reading a platform slice work at all:
+
+- **One `MetadataLoadContext` per assembly.** The slices of a single library are compiled against
+  different worlds, and an Android `System.Runtime` and an iOS `System.Runtime` cannot share a
+  resolver that matches on simple name. A single shared context silently resolves types out of
+  whichever pack was enumerated first.
+- **`Mauime.ReferencePaths.txt`**, written beside every assembly by `Directory.Build.targets`. A
+  library build does not copy its dependencies, so `Mono.Android`, `Microsoft.iOS` and the rest are
+  nowhere near `bin/`. Guessing at the workload's reference-assembly folders would be a proxy;
+  the `ReferencePath` item is what the compiler was actually handed.
+
+That this works is verified rather than assumed: a temporary type exposing
+`Android.Nfc.NfcAdapter`, `CoreNFC.NFCNdefReaderSession` and
+`Windows.Devices.SmartCards.SmartCardReader` rendered correctly in each slice, from a `net10.0` test
+project that can reference none of them.
+
 ### `SimpleNameResolver`, and why `PathAssemblyResolver` could not be used
 
 `PathAssemblyResolver` matches on version as well as simple name, and here there is no version to
@@ -36,10 +59,33 @@ into every output directory that references it, shadowing the real 5.0.0 that `X
 compiled against. The exact version the metadata asks for is nowhere on disk, so the baseline threw
 `FileNotFoundException` until the resolver was replaced with one that matches on simple name alone.
 
-The runtime directory is probed first, so framework assemblies still resolve to the real ones.
+For a legacy assembly the runtime directory is probed first, so framework assemblies resolve to the
+real ones. A Mauime slice does not mix the host runtime in at all: it resolves only against its own
+`Mauime.ReferencePaths.txt`, so an Android slice takes `System.Runtime` from the Android ref pack
+rather than from whatever runtime the tests happen to be running on.
 
 That shadowing is not a curiosity: the test project itself runs on the fork, which is asserted in
 `DEFECT_WebHostPatch_ships_a_fork_of_Microsoft_Extensions_Primitives_that_shadows_the_real_one`.
+
+## The shape of a Mauime library
+
+All four are the same shape, and the shape was settled by building rather than by reading:
+
+- **`Microsoft.Maui.Core`, not `Microsoft.Maui.Controls`.** Core carries `MauiAppBuilder`, the
+  `LifecycleEvents` builders and `Microsoft.Maui.ApplicationModel`. `Microsoft.Maui.Essentials` has
+  none of the first two. An NFC plugin has no business depending on Controls, and now does not.
+- **`Mauime.WebHostPatch` takes no packages**, only a `Microsoft.AspNetCore.App` framework
+  reference. That is enough for `WebApplication` and Kestrel on `net10.0-android`.
+- **`net10.0` alongside the four platform frameworks.** It is what a non-platform project resolves,
+  and for `Mauime.Nfc` it is where "this platform has no implementation" lives — the role
+  `Xamarinme.Nfc` gave `netstandard2.0`.
+- **`AndroidGenerateResourceDesigner=false`.** Android otherwise generates a public `Resource` class
+  into every library, resources or not, and it lands in the package's public surface.
+
+The target framework list lives once, as `$(MauimeTargetFrameworks)` in `Directory.Build.props`.
+`legacy/` is shielded from all of it by its own empty `Directory.Build.props` and
+`Directory.Build.targets`: the imported sources must keep building exactly as they did, and enabling
+`Nullable` across them would bury the four advisory warnings that matter under dozens that do not.
 
 ## What each library is, and what MAUI already does
 
@@ -132,4 +178,10 @@ Three things it drags along:
   baseline finds the repository root by that exact file name.
 - The MAUI workloads present here are `android`, `ios`, `maccatalyst` and `maui-windows`. A
   `net10.0-android` MAUI app builds clean in about 20 seconds.
-- **CI will need a macOS runner** for the `ios` and `maccatalyst` slices of `Mauime.Nfc`.
+- The **iOS and Mac Catalyst library slices compile on Windows**. Only building and signing an *app*
+  for them needs a Mac, so CI on Linux will build two slices per library rather than five — but a
+  macOS runner is still needed to build the demo app for those platforms later.
+- `UseMaui`/`UseMauiCore`/`UseMauiEssentials` **no longer add package references implicitly** since
+  .NET 8. MSBuild says so with MA002.
+- Android drops a public `Resource` designer class into every library unless
+  `AndroidGenerateResourceDesigner` is turned off.

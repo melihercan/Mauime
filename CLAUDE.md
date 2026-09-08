@@ -10,15 +10,40 @@ this is a port, not a framework bump: new repository, fresh git history, **new p
 (`Mauime.*`), and a per-library question of whether the library should exist at all.
 
 **Nothing is published yet.** The work is phased, one commit per phase on `master`, and each phase
-needs a go-ahead. Phase 0 (characterization) is done; nothing has been ported.
+needs a go-ahead. Phase 0 (characterization) and Phase 1 (the MAUI skeleton) are done. **The four
+library projects exist and build, but contain no code**; nothing has been ported.
 
 ## Repository layout
 
+- `Mauime.Nfc/`, `Mauime.Configuration/`, `Mauime.Hosting/`, `Mauime.WebHostPatch/` — the libraries,
+  each multi-targeting `net10.0`, `net10.0-android`, `net10.0-ios`, `net10.0-maccatalyst` and
+  `net10.0-windows10.0.19041.0`.
 - `legacy/` — the Xamarin sources, imported verbatim so Phase 0 could pin real behaviour and every
   later deletion shows up as a diff. Transformed away as the port proceeds.
 - `Mauime.Tests/` — xUnit v3, one project for everything.
 - `wiki/` — [Home](wiki/Home.md), [Building and Testing](wiki/Building-and-Testing.md),
   [Design Notes](wiki/Design-Notes.md), [Modernization Log](wiki/Modernization-Log.md).
+
+## The shape of a library, and why
+
+Settled in Phase 1 by building each option, not by reading documentation. Do not change these
+without the same kind of evidence:
+
+- **`Microsoft.Maui.Core`, not `Microsoft.Maui.Controls` or `Microsoft.Maui.Essentials`.** Core has
+  `MauiAppBuilder`, the `LifecycleEvents` builders and `Microsoft.Maui.ApplicationModel`; Essentials
+  has none of the first two. Since .NET 8 the `UseMaui*` properties do not add the package reference
+  implicitly (MA002).
+- **`Mauime.WebHostPatch` takes no packages**, only a `Microsoft.AspNetCore.App` framework
+  reference. `WebApplication.CreateSlimBuilder()` plus `UseKestrel` compiles clean on
+  `net10.0-android` with nothing else — which is the Xamarin-era fork's whole reason for existing,
+  gone.
+- **`AndroidGenerateResourceDesigner=false`** for android frameworks. Android otherwise generates a
+  public `Resource` class into every library, resources or not, and it lands in the public surface.
+- The framework list lives once, as `$(MauimeTargetFrameworks)` in `Directory.Build.props`.
+
+`legacy/` has its **own empty** `Directory.Build.props` and `Directory.Build.targets`. Discovery
+stops at the first file found walking up, so the imported sources keep building exactly as they did.
+Those shields are the only files added under `legacy/`; nothing imported has been edited.
 
 ## Commands
 
@@ -36,8 +61,8 @@ required. **Do not pass `--nologo`** or other VSTest-era flags: MTP forwards unr
 to the test executable, which exits 5 with "Zero tests ran" — a failure that looks like broken tests
 but is a bad command line. Target one project with `--project <path>`, not a bare path.
 
-**Build the solution before running the tests.** `PublicApiSurfaceTests` reads compiled assemblies
-off disk through `MetadataLoadContext` rather than referencing them.
+**Build the solution before running the tests.** `PublicApiSurfaceTests` and `MultiTargetingTests`
+read compiled assemblies off disk through `MetadataLoadContext` rather than referencing them.
 
 ## The build is not warning-free yet, and that is deliberate
 
@@ -69,15 +94,30 @@ rather than an accident. When a change is intentional, review the diff and copy
 `PublicApi.received.txt` from the test output directory over `PublicApi.approved.txt` in the same
 commit. **Never weaken the assertion.**
 
-It reads metadata only, through `MetadataLoadContext`, because the ported libraries will target MAUI
-platform frameworks (`net10.0-android` and friends) that a `net10.0` test project cannot reference at
-all. The machinery was established in Phase 0, while the legacy libraries were still easy.
+It reads metadata only, through `MetadataLoadContext`, because the libraries target MAUI platform
+frameworks that a `net10.0` test project cannot reference. That is not theoretical: referencing
+`Mauime.Nfc` from `Mauime.Tests` resolves the `net10.0` slice byte for byte, never the Android one.
+
+**Each Mauime library is baselined from its `net10.0` slice only**, and `MultiTargetingTests` holds
+the other four slices to it — same public surface, every framework. A platform-specific member added
+on purpose means rewriting that test to name the exception, in the commit that adds it. Do not
+weaken it into a subset check.
+
+Two things make reading a platform slice work, both added in Phase 1:
+
+- **One `MetadataLoadContext` per assembly.** An Android `System.Runtime` and an iOS `System.Runtime`
+  cannot share a simple-name resolver; a shared context silently resolves types out of whichever
+  pack was enumerated first.
+- **`Mauime.ReferencePaths.txt`**, written beside every assembly by `Directory.Build.targets` from
+  the `ReferencePath` item. A library build does not copy its dependencies, so `Mono.Android`,
+  `Microsoft.iOS` and the rest are nowhere near `bin/`. `MultiTargetingTests` asserts the file
+  exists for every slice, because while the libraries are empty nothing else would notice its loss.
 
 **`SimpleNameResolver`, not `PathAssemblyResolver`**: `legacy/WebHostPatch` drops a fork of
 `Microsoft.Extensions.Primitives` stamped 5.9.0.0 into every referencing output directory, shadowing
 the real 5.0.0, so the exact version the metadata asks for is nowhere on disk. Matching on simple
-name alone is the fix. The runtime directory is probed first so framework assemblies still resolve
-to the real ones.
+name alone is the fix. For a legacy assembly the runtime directory is probed first; a Mauime slice
+resolves only against its own reference paths, so its world stays self-consistent.
 
 ## The defect-test convention
 
@@ -106,6 +146,14 @@ it.
 `TestAssets/**/*.json` are embedded resources, because `Xamarinme.Configuration` reads
 `{Prefix}.appsettings.json` out of an assembly's manifest resources and there is no other way to
 reach it.
+
+## Verify by building, not by reading
+
+Phase 1's four findings all came from a build: that Essentials lacks `MauiAppBuilder`, that Kestrel
+needs no packages on android, that Android injects a public `Resource` class, and that iOS library
+slices compile on Windows. The baseline's ability to read platform types was likewise proved with a
+temporary type exposing `Android.Nfc.NfcAdapter`, `CoreNFC.NFCNdefReaderSession` and
+`Windows.Devices.SmartCards.SmartCardReader`, then deleted. Keep doing that.
 
 ## Decisions already taken
 

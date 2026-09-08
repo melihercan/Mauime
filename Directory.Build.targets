@@ -1,0 +1,21 @@
+<Project>
+
+  <!--
+    Records exactly which assemblies each slice was compiled against, next to the assembly itself.
+
+    The public-API baseline reads the built libraries through MetadataLoadContext, which has to
+    resolve every referenced type by hand. Scanning bin/ is not enough for a MAUI library: a library
+    build does not copy its dependencies, so Microsoft.Maui.Core, Mono.Android, Microsoft.iOS and
+    the rest are nowhere near the output. Guessing at the workload's reference-assembly folders
+    would be a proxy for the truth; @(ReferencePath) is the truth.
+
+    Not applied to legacy/, which has its own empty Directory.Build.targets.
+  -->
+  <Target Name="MauimeWriteReferencePaths" AfterTargets="ResolveReferences">
+    <WriteLinesToFile File="$(TargetDir)Mauime.ReferencePaths.txt"
+                      Lines="@(ReferencePath)"
+                      Overwrite="true"
+                      WriteOnlyWhenDifferent="true" />
+  </Target>
+
+</Project>

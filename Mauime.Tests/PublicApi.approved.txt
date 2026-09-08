@@ -52,3 +52,11 @@ assembly Xamarinme.WebHostPatch
     method System.Threading.Tasks.Task WaitForStartAsync(System.Threading.CancellationToken cancellationToken)
     method System.Void Dispose()
 
+assembly Mauime.Configuration
+
+assembly Mauime.Hosting
+
+assembly Mauime.Nfc
+
+assembly Mauime.WebHostPatch
+

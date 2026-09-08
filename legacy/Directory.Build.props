@@ -1,0 +1,13 @@
+<Project>
+
+  <!--
+    Deliberately empty. Directory.Build.props discovery stops at the first file found walking up,
+    so this shields the imported Xamarin sources from the repository-wide settings in the root
+    Directory.Build.props. legacy/ must keep building exactly as it did in Xamarinme; enabling
+    Nullable across it, for instance, would bury the four advisory warnings that matter under
+    dozens that do not.
+
+    This is the only file added under legacy/. Nothing imported has been edited.
+  -->
+
+</Project>

@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(MauimeTargetFrameworks)</TargetFrameworks>
+    <UseMauiCore>true</UseMauiCore>
+    <SingleProject>true</SingleProject>
+    <AssemblyName>Mauime.WebHostPatch</AssemblyName>
+    <RootNamespace>Mauime.WebHostPatch</RootNamespace>
+    <PackageId>Mauime.WebHostPatch</PackageId>
+    <Description>Run an ASP.NET Core web host and Kestrel server inside a .NET MAUI app.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      Microsoft.Maui.Core, not Microsoft.Maui.Controls: Core carries MauiAppBuilder, the
+      LifecycleEvents builders and Microsoft.Maui.ApplicationModel, which is everything these
+      libraries need. Microsoft.Maui.Essentials alone is not enough - it has none of them.
+      Since .NET 8 the UseMaui* properties no longer add the package reference implicitly (MA002).
+    -->
+    <PackageReference Include="Microsoft.Maui.Core" Version="$(MauiVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      No packages, and no fork of anything. On .NET 10 an ASP.NET Core web host inside a MAUI app
+      needs a framework reference and nothing else - verified building WebApplication plus
+      UseKestrel against net10.0-android. Xamarinme.WebHostPatch existed because ASP.NET Core 2.2
+      on Mono needed both a patched ConsoleLifetime and a shadowing fork of
+      Microsoft.Extensions.Primitives. Neither is needed here.
+    -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+</Project>

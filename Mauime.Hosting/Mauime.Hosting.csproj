@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(MauimeTargetFrameworks)</TargetFrameworks>
+    <UseMauiCore>true</UseMauiCore>
+    <SingleProject>true</SingleProject>
+    <AssemblyName>Mauime.Hosting</AssemblyName>
+    <RootNamespace>Mauime.Hosting</RootNamespace>
+    <PackageId>Mauime.Hosting</PackageId>
+    <Description>Host environment support for .NET MAUI, extending MauiAppBuilder.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      Microsoft.Maui.Core, not Microsoft.Maui.Controls: Core carries MauiAppBuilder, the
+      LifecycleEvents builders and Microsoft.Maui.ApplicationModel, which is everything these
+      libraries need. Microsoft.Maui.Essentials alone is not enough - it has none of them.
+      Since .NET 8 the UseMaui* properties no longer add the package reference implicitly (MA002).
+    -->
+    <PackageReference Include="Microsoft.Maui.Core" Version="$(MauiVersion)" />
+  </ItemGroup>
+
+</Project>

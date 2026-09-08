@@ -14,32 +14,43 @@ namespace Mauime.Tests;
 /// </summary>
 internal static class PublicApiDumper
 {
-    internal static string Dump(IEnumerable<string> assemblyNames) =>
-        Dump(assemblyNames.Select(n => (n, TestAssemblies.LocateDll(n))));
-
-    /// <summary>Dumps specific assembly files by path.</summary>
+    /// <summary>Dumps several assemblies, each rendered under its own heading.</summary>
     internal static string Dump(IEnumerable<(string Name, string Path)> assemblies)
     {
-        using var context = new MetadataLoadContext(new SimpleNameResolver(
-            TestAssemblies.ProbingDirectories()
-                .Distinct()
-                .SelectMany(d => Directory.GetFiles(d, "*.dll"))));
         var sb = new StringBuilder();
 
         foreach (var (name, path) in assemblies)
         {
-            var assembly = context.LoadFromAssemblyPath(path);
-            sb.Append("assembly ").Append(name).AppendLine();
-
-            foreach (var type in assembly.GetExportedTypes().OrderBy(t => t.FullName, StringComparer.Ordinal))
-            {
-                AppendType(sb, type);
-            }
-
-            sb.AppendLine();
+            sb.Append(Dump(name, path));
         }
 
         return sb.ToString();
+    }
+
+    /// <summary>
+    /// Dumps one assembly, in a <see cref="MetadataLoadContext"/> of its own.
+    ///
+    /// One context per assembly, not one for all of them: the platform slices of a single library
+    /// are compiled against different worlds, and an android System.Runtime and an ios System.Runtime
+    /// cannot share a resolver that matches on simple name. Mixing them silently resolves types out
+    /// of whichever pack happened to be enumerated first.
+    /// </summary>
+    internal static string Dump(string name, string path)
+    {
+        using var context = new MetadataLoadContext(
+            new SimpleNameResolver(TestAssemblies.ProbingFiles(path)));
+
+        var assembly = context.LoadFromAssemblyPath(path);
+        var sb = new StringBuilder();
+
+        sb.Append("assembly ").Append(name).AppendLine();
+
+        foreach (var type in assembly.GetExportedTypes().OrderBy(t => t.FullName, StringComparer.Ordinal))
+        {
+            AppendType(sb, type);
+        }
+
+        return sb.AppendLine().ToString();
     }
 
     private static void AppendType(StringBuilder sb, Type type)
@@ -153,8 +164,8 @@ internal static class PublicApiDumper
 /// which shadows the real 5.0.0 that Xamarinme.Hosting was compiled against, so the exact version is
 /// nowhere on disk. Rendering type names does not depend on getting the version right.
 ///
-/// First path wins per name, and <see cref="TestAssemblies.ProbingDirectories"/> yields the runtime
-/// directory first, so framework assemblies always resolve to the real ones.
+/// First path wins per name. <see cref="TestAssemblies.ProbingFiles"/> supplies exactly what the
+/// compiler was handed for that one slice, so there is no second candidate to get wrong.
 /// </summary>
 internal sealed class SimpleNameResolver : MetadataAssemblyResolver
 {

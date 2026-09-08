@@ -19,7 +19,7 @@ public class PublicApiSurfaceTests
     [Fact]
     public void Public_surface_matches_the_approved_baseline()
     {
-        var received = PublicApiDumper.Dump(TestAssemblies.Names);
+        var received = PublicApiDumper.Dump(TestAssemblies.Baseline());
 
         var receivedPath = Path.Combine(AppContext.BaseDirectory, "PublicApi.received.txt");
         File.WriteAllText(receivedPath, received);

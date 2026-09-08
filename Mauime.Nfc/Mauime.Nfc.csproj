@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(MauimeTargetFrameworks)</TargetFrameworks>
+    <UseMauiCore>true</UseMauiCore>
+    <SingleProject>true</SingleProject>
+    <AssemblyName>Mauime.Nfc</AssemblyName>
+    <RootNamespace>Mauime.Nfc</RootNamespace>
+    <PackageId>Mauime.Nfc</PackageId>
+    <Description>NFC plugin for .NET MAUI, supporting Android, iOS, Mac Catalyst and Windows.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      Microsoft.Maui.Core, not Microsoft.Maui.Controls: Core carries MauiAppBuilder, the
+      LifecycleEvents builders and Microsoft.Maui.ApplicationModel, which is everything these
+      libraries need. Microsoft.Maui.Essentials alone is not enough - it has none of them.
+      Since .NET 8 the UseMaui* properties no longer add the package reference implicitly (MA002).
+    -->
+    <PackageReference Include="Microsoft.Maui.Core" Version="$(MauiVersion)" />
+  </ItemGroup>
+
+</Project>
