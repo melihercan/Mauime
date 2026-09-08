@@ -89,6 +89,14 @@ critical advisory in `Microsoft.AspNetCore.Server.Kestrel.Core`
 ([GHSA-prrf-397v-83xh](https://github.com/advisories/GHSA-prrf-397v-83xh)). Its forked Primitives
 also shadows the real assembly for anything in the same output directory.
 
+## Documentation
+
+Full documentation is in the [wiki](https://github.com/melihercan/Me.Toolkit.Maui/wiki) — [Design Notes](https://github.com/melihercan/Me.Toolkit.Maui/wiki/Design-Notes) for why each
+library is shaped the way it is, [Building and Testing](https://github.com/melihercan/Me.Toolkit.Maui/wiki/Building-and-Testing) for the
+multi-targeting rules, and [Publishing](https://github.com/melihercan/Me.Toolkit.Maui/wiki/Publishing) for how these packages are released.
+
+Source: [github.com/melihercan/Me.Toolkit.Maui](https://github.com/melihercan/Me.Toolkit.Maui)
+
 ## Licence
 
 MIT.

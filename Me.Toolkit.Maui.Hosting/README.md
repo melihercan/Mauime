@@ -62,6 +62,14 @@ platform.
 If you only ever need a constant environment name, you do not need this package — but you do need to
 wrap rather than assign, which is the part that is easy to get wrong.
 
+## Documentation
+
+Full documentation is in the [wiki](https://github.com/melihercan/Me.Toolkit.Maui/wiki) — [Design Notes](https://github.com/melihercan/Me.Toolkit.Maui/wiki/Design-Notes) for why each
+library is shaped the way it is, [Building and Testing](https://github.com/melihercan/Me.Toolkit.Maui/wiki/Building-and-Testing) for the
+multi-targeting rules, and [Publishing](https://github.com/melihercan/Me.Toolkit.Maui/wiki/Publishing) for how these packages are released.
+
+Source: [github.com/melihercan/Me.Toolkit.Maui](https://github.com/melihercan/Me.Toolkit.Maui)
+
 ## Licence
 
 MIT.
