@@ -1,0 +1,228 @@
+name: Publish
+
+# One workflow for every package, because a NuGet Trusted Publishing policy is bound to a single
+# workflow file *and* a single repository. Keeping this as one file means one policy - scoped to
+# "Mauime.*" - covers all three packages, every future version, and any future Mauime.X package.
+#
+# Ways in:
+#   * tag v<version>                — publishes every package
+#   * tag configuration-v<version>  — publishes Mauime.Configuration only
+#   * tag hosting-v<version>        — publishes Mauime.Hosting only
+#   * tag webhostpatch-v<version>   — publishes Mauime.WebHostPatch only
+#   * run manually                  — defaults to a dry run that packs and uploads the .nupkg
+#                                     files as build artifacts without publishing anything
+#
+# Mauime.Nfc is deliberately absent. It builds, ships in the demo and has tests, but its reading
+# session is unfinished, so the project sets IsPackable=false and there is nothing here to pack.
+on:
+  push:
+    tags:
+      - 'v*'
+      - 'configuration-v*'
+      - 'hosting-v*'
+      - 'webhostpatch-v*'
+  workflow_dispatch:
+    inputs:
+      package:
+        description: 'Which package to publish'
+        type: choice
+        options: [all, configuration, hosting, webhostpatch]
+        default: all
+      dry-run:
+        description: 'Pack only, do not push to NuGet'
+        type: boolean
+        default: true
+
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+env:
+  CONFIGURATION_PROJECT: Mauime.Configuration/Mauime.Configuration.csproj
+  HOSTING_PROJECT: Mauime.Hosting/Mauime.Hosting.csproj
+  WEBHOSTPATCH_PROJECT: Mauime.WebHostPatch/Mauime.WebHostPatch.csproj
+
+jobs:
+  publish:
+    name: Pack and publish
+    # windows-latest, and this is not a preference. Directory.Build.props builds net10.0-ios and
+    # net10.0-maccatalyst only off Linux, and net10.0-windows10.0.19041.0 only on Windows, so
+    # packing on ubuntu-latest would produce packages containing two target frameworks instead of
+    # five - and it would do it silently, with a green tick, publishing a package that simply does
+    # not support iOS, Mac Catalyst or Windows. The "all five target frameworks" step below turns
+    # that from a comment into a failure.
+    runs-on: windows-latest
+
+    permissions:
+      contents: read
+      # Lets the job request a GitHub OIDC token, which nuget.org exchanges for a
+      # short-lived API key. Nothing long-lived is stored in the repository.
+      id-token: write
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+
+      # Reads the solution and installs exactly the workloads its target frameworks need, rather
+      # than a hardcoded list that would drift from Directory.Build.props.
+      - name: Install MAUI workloads
+        run: dotnet workload restore Mauime.slnx
+
+      # Works out which projects this run covers, and which version a tag claims.
+      - name: Resolve targets
+        id: targets
+        run: |
+          set -euo pipefail
+          all="$CONFIGURATION_PROJECT $HOSTING_PROJECT $WEBHOSTPATCH_PROJECT"
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            case "${{ inputs.package }}" in
+              configuration) projects="$CONFIGURATION_PROJECT" ;;
+              hosting)       projects="$HOSTING_PROJECT" ;;
+              webhostpatch)  projects="$WEBHOSTPATCH_PROJECT" ;;
+              *)             projects="$all" ;;
+            esac
+            version=''                       # nothing to verify on a manual run
+          else
+            case "$GITHUB_REF_NAME" in
+              configuration-v*) projects="$CONFIGURATION_PROJECT"; version="${GITHUB_REF_NAME#configuration-v}" ;;
+              hosting-v*)       projects="$HOSTING_PROJECT";       version="${GITHUB_REF_NAME#hosting-v}" ;;
+              webhostpatch-v*)  projects="$WEBHOSTPATCH_PROJECT";  version="${GITHUB_REF_NAME#webhostpatch-v}" ;;
+              v*)               projects="$all";                   version="${GITHUB_REF_NAME#v}" ;;
+              *)                echo "::error::Unrecognised tag $GITHUB_REF_NAME"; exit 1 ;;
+            esac
+          fi
+          echo "projects=$projects" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Projects: $projects"
+          echo "Version:  ${version:-(not checked)}"
+
+      # Catches the classic release bug: tagging one version while a csproj still says another.
+      # Note the csproj values are written as 26.09.08 and NuGet normalises them to 26.9.8, so the
+      # tag must carry the csproj spelling, i.e. v26.09.08.
+      - name: Verify the tag matches the project versions
+        if: steps.targets.outputs.version != ''
+        run: |
+          set -euo pipefail
+          tag='${{ steps.targets.outputs.version }}'
+          for project in ${{ steps.targets.outputs.projects }}; do
+            version=$(sed -n 's|.*<Version>\(.*\)</Version>.*|\1|p' "$project" | head -1)
+            echo "$project declares $version, tag says $tag"
+            if [ "$version" != "$tag" ]; then
+              echo "::error::Tag $GITHUB_REF_NAME does not match <Version>$version</Version> in $project"
+              exit 1
+            fi
+          done
+
+      # All four libraries, including the one that is never packed: the tests read every library's
+      # compiled assemblies off disk through MetadataLoadContext rather than referencing them, so
+      # PublicApiSurfaceTests and MultiTargetingTests fail outright if Mauime.Nfc has not been built
+      # in this configuration. DemoApp is excluded for the same reason as in ci.yml - it is an app,
+      # it is slow, and nothing in it ships.
+      - name: Build libraries
+        shell: pwsh
+        run: |
+          foreach ($project in 'Mauime.Configuration','Mauime.Hosting','Mauime.Nfc','Mauime.WebHostPatch') {
+            dotnet build "$project/$project.csproj" --configuration Release -warnaserror
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+
+      # Never publish a package whose tests do not pass.
+      #
+      # Do not add --nologo, -warnaserror, or any other flag Microsoft.Testing.Platform does not
+      # know: it forwards unrecognised arguments to the test executable, which exits 5 having run
+      # nothing. See the same warning in ci.yml, where it really happened.
+      - name: Test
+        run: dotnet test --project Mauime.Tests/Mauime.Tests.csproj --configuration Release
+
+      # --no-build, so what is published is exactly what the tests just ran against.
+      - name: Pack
+        run: |
+          set -euo pipefail
+          for project in ${{ steps.targets.outputs.projects }}; do
+            dotnet pack "$project" \
+              --configuration Release \
+              --no-build \
+              --output artifacts \
+              -p:ContinuousIntegrationBuild=true
+          done
+
+      - name: Show package contents
+        shell: pwsh
+        run: |
+          foreach ($package in Get-ChildItem artifacts/*.nupkg) {
+            Write-Host "== $($package.Name)"
+            $zip = [IO.Compression.ZipFile]::OpenRead($package.FullName)
+            $zip.Entries | ForEach-Object { Write-Host "   $($_.FullName)" }
+            $zip.Dispose()
+          }
+
+      # The runner comment above, enforced. A package built on the wrong operating system is still
+      # a valid package - it just quietly supports two platforms instead of five, and nobody finds
+      # out until an iOS app fails to restore it.
+      - name: Verify every package carries all five target frameworks
+        shell: pwsh
+        run: |
+          $expected = 'net10.0', 'net10.0-android', 'net10.0-ios', 'net10.0-maccatalyst', 'net10.0-windows'
+          $failed = $false
+
+          foreach ($package in Get-ChildItem artifacts/*.nupkg) {
+            $zip = [IO.Compression.ZipFile]::OpenRead($package.FullName)
+            $frameworks = $zip.Entries.FullName |
+              Where-Object { $_ -like 'lib/*' } |
+              ForEach-Object { $_.Split('/')[1] } |
+              Sort-Object -Unique
+            $zip.Dispose()
+
+            foreach ($framework in $expected) {
+              # Prefix match, because the platform versions are stamped in: net10.0-android36.0.
+              # net10.0 itself is matched exactly first, so it is not satisfied by net10.0-android.
+              $found = $frameworks | Where-Object { $_ -eq $framework -or $_ -like "$framework*" }
+              if (-not $found) {
+                Write-Host "::error::$($package.Name) has no $framework slice. Found: $($frameworks -join ', ')"
+                $failed = $true
+              }
+            }
+
+            Write-Host "$($package.Name): $($frameworks -join ', ')"
+          }
+
+          if ($failed) { exit 1 }
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: nupkg
+          path: artifacts/*.nupkg
+          if-no-files-found: error
+
+      # Trusted Publishing: swap a GitHub OIDC token for an API key that nuget.org
+      # issues for one hour. Requested immediately before the push, because the key
+      # expires and each token buys exactly one key.
+      #
+      # Requires a Trusted Publishing policy on nuget.org naming this repository and
+      # this workflow file, scoped to Mauime.*. No API key secret is involved.
+      - name: NuGet login
+        if: github.event_name == 'push' || inputs.dry-run == false
+        id: login
+        uses: NuGet/login@v1
+        with:
+          user: melihercan
+
+      # --skip-duplicate makes a re-run harmless if the version is already published.
+      - name: Push to NuGet
+        if: github.event_name == 'push' || inputs.dry-run == false
+        run: |
+          dotnet nuget push "artifacts/*.nupkg" \
+            --api-key "${{ steps.login.outputs.NUGET_API_KEY }}" \
+            --source https://api.nuget.org/v3/index.json \
+            --skip-duplicate
+
+      - name: Dry run summary
+        if: github.event_name == 'workflow_dispatch' && inputs.dry-run
+        run: echo "::notice::Dry run - packages built and uploaded as artifacts, nothing published."

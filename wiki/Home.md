@@ -3,8 +3,10 @@
 Libraries and plugins for .NET MAUI applications, ported from
 [Xamarinme](https://github.com/melihercan/Xamarinme) now that Xamarin is retired.
 
-**All four libraries are ported and packaged at `26.9.8`; nothing is published yet.** Publishing is
-what remains. `DemoApp/` is a single MAUI app with a tab per library, replacing Xamarinme's three
+**All four libraries are ported and packaged at `26.9.8`; nothing is published yet.** The publishing
+workflow exists and three of the four are ready to go out — `Mauime.Nfc` is held back as unfinished.
+What remains is the nuget.org Trusted Publishing policy and the first tag; see
+[Publishing](Publishing). `DemoApp/` is a single MAUI app with a tab per library, replacing Xamarinme's three
 Xamarin.Forms solutions across 17 projects. The Xamarin sources were imported under `legacy/` for the
 characterization phase and deleted once each library had been replaced — the history is the record.
 
@@ -16,7 +18,7 @@ between IDs.
 
 | Planned package | Replaces | Status |
 |---|---|---|
-| `Mauime.Nfc` | `Xamarinme.Nfc` — never published | **Ported** — Android and iOS implemented |
+| `Mauime.Nfc` | `Xamarinme.Nfc` — never published | **Ported, not published** — Android and iOS implemented, session unfinished; `IsPackable=false` |
 | `Mauime.Configuration` | [`Xamarinme.Configuration`](https://www.nuget.org/packages/Xamarinme.Configuration) 1.0.2 | **Ported** |
 | `Mauime.Hosting` | [`Xamarinme.Hosting`](https://www.nuget.org/packages/Xamarinme.Hosting) 1.0.3 | **Ported** |
 | `Mauime.WebHostPatch` | [`Xamarinme.WebHostPatch`](https://www.nuget.org/packages/Xamarinme.WebHostPatch) 1.0.0 | **Ported** — no patch needed on .NET 10 |
@@ -45,3 +47,4 @@ The `Xamarinme.*` packages stay on nuget.org as they are. Xamarin retiring is wh
   warning-free, and what the test suite covers.
 - **[Design Notes](Design-Notes)** — why the repository looks like this, and the invariants.
 - **[Modernization Log](Modernization-Log)** — what changed, phase by phase.
+- **[Publishing](Publishing)** — the tags, why one workflow, and why it must run on Windows.

@@ -461,6 +461,101 @@ names the specific mistake rather than the general rule.
 CI builds the four libraries by name rather than the solution, because the demo is in the solution
 and out of CI.
 
+## Phase 7 — the web host on a device, and the address it reported
+
+`Mauime.WebHostPatch` had never actually served a request. Everything about it was argued from build
+output: the `NETSDK1082` reasoning, the choice of netstandard2.0 packages, the claim that the two
+Xamarinme forks were unnecessary. All of it was correct, and none of it was evidence.
+
+Run on a physical Android device, Kestrel started, served over both USB (`adb forward`) and real
+Wi-Fi, stopped, released the port, and started again on the same one. That is the claim settled:
+ASP.NET Core 2.3.x netstandard2.0 packages, on .NET 10's Android runtime, answering requests.
+
+### The address was wrong
+
+The demo displayed:
+
+```
+OPEN THIS FROM ANOTHER DEVICE
+http://0.0.0.0:5001/
+```
+
+`NetworkAddress.GetLocalAddress()` required `NetworkInterfaceType.Ethernet` or `Wireless80211`. .NET
+classifies an interface on Linux by reading `/sys/class/net/<name>/type`, and Android's SELinux
+policy denies that file — to an app, and even to the more privileged `shell` user. The device
+reported:
+
+```
+wlan0 |Unknown |Up|[192.168.1.16]
+dummy0|Unknown |Up|[]
+lo    |Loopback|Up|[127.0.0.1]
+```
+
+So the filter rejected the only working interface and the code fell back to the bound `0.0.0.0`.
+Interface type now orders candidates instead of qualifying them, and loopback is excluded by address
+— a check that holds whether or not classification works. `dummy0` is why every interface is
+searched rather than the first plausible one.
+
+Android does classify `lo` correctly, so the loopback check is defensive rather than the thing that
+was broken. An earlier version of this entry, the code comment and the README all claimed otherwise;
+the device data is what corrected them.
+
+### The test that could not have caught it
+
+It asserted "routable IPv4, **or null**", and null is exactly what Android returned. Allowing null
+was meant to tolerate a build agent with no network; what it tolerated was the defect. It is
+rewritten into six tests over the selection rules, which need no network at all. Two of them were
+watched failing against the old logic — `expected 192.168.1.16, found null`, the same symptom seen
+on the phone — before the fix was restored.
+
+Testing those rules needs interfaces that cannot be constructed: `NetworkInterface` is abstract and
+its address collections have internal constructors. Selection therefore takes a candidate record,
+exposed to the tests through `InternalsVisibleTo`.
+
+### `adb install` does not deploy your code
+
+Between the fix and the evidence sat an hour of wrong conclusions. `adb install -r` reported
+**Success** twice while the app kept running hour-old C#. .NET Android **Debug** builds use fast
+deployment: assemblies are pushed to `/data/data/<pkg>/files/.__override__/<abi>/` and are *not*
+packed into the APK, so installing the APK updates only the native shell. The device's
+`Mauime.WebHostPatch.dll` was timestamped 15:00 against a 15:09 build.
+
+Deploy with `dotnet build DemoApp/DemoApp.csproj -c Debug -f net10.0-android -t:Install`, and check
+`adb shell run-as <pkg> ls -la files/.__override__/<abi>/` before concluding anything about
+behaviour on device.
+
+The failure mode is worth naming: the evidence said the fix did not work, and the honest reading of
+that was that the diagnosis was wrong. It was the deployment that was wrong. Temporary
+instrumentation in the demo — dumping every interface into the status label — is what separated the
+two, and it is the same technique that found the ReactiveUI initialization crash in Phase 6.
+
+## Phase 8 — publishing
+
+`publish.yml`, modelled on Blazorme's, with the same single-workflow rule: a NuGet Trusted Publishing
+policy binds to one workflow file *and* one repository, so one file covers every package and every
+future version.
+
+Two things differ from Blazorme.
+
+**It runs on `windows-latest`, and that decides package contents.** `Directory.Build.props` builds
+`net10.0-ios` and `net10.0-maccatalyst` only off Linux, and `net10.0-windows10.0.19041.0` only on
+Windows. Packing on `ubuntu-latest` would produce a perfectly valid package containing two target
+frameworks instead of five, publish it with a green tick, and strand iOS, Mac Catalyst and Windows
+consumers permanently, since a published version cannot be replaced. The job therefore ends by
+opening each `.nupkg` and failing if any expected slice is missing — the `runs-on` line is the
+consequence, that step is the rule. It was checked both ways: against the three real packages, and
+against a synthetic package built the way Linux would build it.
+
+**`Mauime.Nfc` is held back.** It builds, ships in the demo and has tests, but its reading session is
+unfinished and has never been exercised against a physical tag. The project sets `IsPackable=false`,
+so `dotnet pack` cannot produce it by accident, and there is no `nfc-v*` trigger. It is still *built*
+by the publish job, because `PublicApiSurfaceTests` and `MultiTargetingTests` read every library's
+assemblies off disk and fail outright if it is missing.
+
+The tag resolver and the version check were exercised locally across every tag shape, including the
+ones that must be rejected. `v26.09.08` is the tag; `v26.9.8` fails the version check, because the
+comparison is against the raw csproj text and NuGet normalises only afterwards.
+
 ## Settled, and not to be reopened
 
 - **`26.9.8` is the version.** Date-based, matching Blazorme and Utilme. Publishing it closes the
@@ -475,11 +570,12 @@ and out of CI.
 
 ## What is still open
 
-- **The demo app.** One MAUI project to replace Xamarinme's three Xamarin.Forms
-  solutions-in-a-solution across 17 projects. It is also the only thing that would exercise
-  `Mauime.Nfc`'s Android and iOS implementations, which have no behavioural coverage at all, and it
-  is what forces a macOS CI job.
-- **Publishing.** A single `publish.yml` and a NuGet Trusted Publishing policy scoped to `Mauime.*`
-  and bound to this repository. The repository does not exist on GitHub yet — there is no remote.
-- **The first CI run.** `ci.yml` has never executed on a runner; only its command sequence has been
-  verified, locally.
+- **The NuGet Trusted Publishing policy.** It does not exist yet, and it has to, before the first
+  tag is pushed — the run will otherwise do everything correctly and fail at the final step. See
+  [Publishing](Publishing) for the exact fields.
+- **`Mauime.Nfc`.** Unfinished, unpublished, and never exercised against a physical tag. The
+  Android foreground-dispatch path and the CoreNFC session have no behavioural coverage; the demo's
+  NFC tab renders but has not been used to read anything.
+- **iOS and Mac Catalyst at runtime.** The library slices compile on Windows CI, but no app has been
+  built, signed or run on either. `Mauime.WebHostPatch`'s note that iOS stops a backgrounded server
+  is inherited from the Xamarin era and unverified here.

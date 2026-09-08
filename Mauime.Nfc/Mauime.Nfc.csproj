@@ -7,6 +7,14 @@
     <AssemblyName>Mauime.Nfc</AssemblyName>
     <RootNamespace>Mauime.Nfc</RootNamespace>
     <PackageId>Mauime.Nfc</PackageId>
+
+    <!--
+      Not published. The library builds, ships in the demo and is covered by tests, but the reading
+      session is not finished and has never been exercised against a tag on a device. Excluding it
+      here rather than only in publish.yml means a plain `dotnet pack` on the solution cannot
+      produce a Mauime.Nfc.nupkg by accident. Remove this when the session is done.
+    -->
+    <IsPackable>false</IsPackable>
     <Version>26.09.08</Version>
     <Product>Mauime.Nfc</Product>
     <Description>NFC for .NET MAUI: read and write NDEF messages on a tag.
