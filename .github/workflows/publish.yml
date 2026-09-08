@@ -215,13 +215,30 @@ jobs:
           user: melihercan
 
       # --skip-duplicate makes a re-run harmless if the version is already published.
+      #
+      # The glob is expanded here rather than handed to dotnet as a quoted string. Quoted, bash does
+      # not expand it and dotnet nuget push does not either, so the first attempt at publishing
+      # failed with "File does not exist (artifacts/*.nupkg)" - after a successful OIDC login, which
+      # burns the token. Pushing one file at a time also means the log names each package.
       - name: Push to NuGet
         if: github.event_name == 'push' || inputs.dry-run == false
         run: |
-          dotnet nuget push "artifacts/*.nupkg" \
-            --api-key "${{ steps.login.outputs.NUGET_API_KEY }}" \
-            --source https://api.nuget.org/v3/index.json \
-            --skip-duplicate
+          set -euo pipefail
+          shopt -s nullglob
+          packages=(artifacts/*.nupkg)
+
+          if [ ${#packages[@]} -eq 0 ]; then
+            echo "::error::No packages found in artifacts/ to push."
+            exit 1
+          fi
+
+          for package in "${packages[@]}"; do
+            echo "Pushing $package"
+            dotnet nuget push "$package" \
+              --api-key "${{ steps.login.outputs.NUGET_API_KEY }}" \
+              --source https://api.nuget.org/v3/index.json \
+              --skip-duplicate
+          done
 
       - name: Dry run summary
         if: github.event_name == 'workflow_dispatch' && inputs.dry-run
