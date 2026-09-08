@@ -10,9 +10,10 @@ this is a port, not a framework bump: new repository, fresh git history, **new p
 (`Mauime.*`), and a per-library question of whether the library should exist at all.
 
 **Nothing is published yet.** The work is phased, one commit per phase on `master`, and each phase
-needs a go-ahead. Phases 0 (characterization), 1 (the MAUI skeleton) and 2 (`Mauime.Nfc`) are done.
-`Mauime.Configuration`, `Mauime.Hosting` and `Mauime.WebHostPatch` exist and build but contain no
-code yet.
+needs a go-ahead. Phases 0 (characterization), 1 (the MAUI skeleton), 2 (`Mauime.Nfc`) and 3 (the
+other three libraries) are done. **All four libraries are ported.** What remains is the demo app,
+package metadata, and CI plus publishing — and `-warnaserror` cannot be turned on until `legacy/` is
+deleted.
 
 ## Repository layout
 
@@ -108,6 +109,31 @@ net10.0 test project, which resolves the unsupported slice.
 `LIMITATION_The_Android_and_iOS_implementations_have_no_behavioural_coverage` asserts that, so it
 fails if the situation changes. Their fixes are held by source pins, which is a second choice and
 labelled as one.
+
+## The other three libraries
+
+**`Mauime.Configuration`** wraps `Microsoft.Extensions.Configuration.Json`, which MAUI does not
+reference. Referencing rather than vendoring is the deliberate opposite of `Mauime.Nfc`'s call:
+NdefLibrary was dead, this is live and first-party. Only `AddEmbeddedResourceJson` is testable —
+`AddAppPackageJson` needs MAUI's `FileSystem`, which throws on the net10.0 slice.
+
+**`Mauime.Hosting`** exists only because `MauiHostEnvironment` always reports `Production`. It
+**wraps** the platform environment; do not go back to assigning `EnvironmentName`, whose setter
+throws `NotImplementedException` even though the interface declares it and the type reports
+`CanWrite`.
+
+**`Mauime.WebHostPatch`** has no NuGet dependencies and no forks — a `Microsoft.AspNetCore.App`
+framework reference is all a web host needs on .NET 10. Its tests start a real Kestrel on loopback;
+keep them that way, because the claim that no patch is needed is the whole point of the package.
+Note `ListenLocalhost(0)` is refused by Kestrel — bind `IPAddress.Loopback` explicitly for a dynamic
+port.
+
+## XML documentation is generated and enforced
+
+`GenerateDocumentationFile` is on for the four `Mauime.*` libraries, so **CS1591 requires every
+public member to be documented**. Blazorme had to leave this off; here the docs came with the code,
+so keep them coming. Keyed on project name rather than `IsPackable`, because
+`Directory.Build.props` is imported before the project body sets it.
 
 ## The API baseline
 

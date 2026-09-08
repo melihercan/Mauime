@@ -20,7 +20,15 @@
     legacy assemblies from here too.
   -->
   <ItemGroup>
+    <ProjectReference Include="..\Mauime.Configuration\Mauime.Configuration.csproj" />
+    <ProjectReference Include="..\Mauime.Hosting\Mauime.Hosting.csproj" />
     <ProjectReference Include="..\Mauime.Nfc\Mauime.Nfc.csproj" />
+    <ProjectReference Include="..\Mauime.WebHostPatch\Mauime.WebHostPatch.csproj" />
+  </ItemGroup>
+
+  <!-- Settings fixtures for Mauime.Configuration's embedded-resource path. -->
+  <ItemGroup>
+    <EmbeddedResource Include="TestAssets\**\*.json" />
   </ItemGroup>
 
   <ItemGroup>

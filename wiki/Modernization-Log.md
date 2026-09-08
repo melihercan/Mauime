@@ -221,6 +221,76 @@ legacy.
 inverting the message-begin flag failed 10, restoring the immutable `PendingIntent` failed 1, and
 letting the unsupported platform succeed silently failed 1.
 
+## Phase 3 — the remaining three libraries
+
+`Mauime.Configuration`, `Mauime.Hosting` and `Mauime.WebHostPatch`, which completes the port. One
+package was added, `Microsoft.Extensions.Configuration.Json`; the other two libraries have no NuGet
+dependencies at all.
+
+Two facts settled the designs, both established by running code rather than reading about it — and
+one of them only after the first attempt failed:
+
+- **MAUI already registers an `IHostEnvironment`.** That was Phase 0's open question. It is
+  `MauiHostEnvironment`, and it always reports `Production`.
+- **Its `EnvironmentName` setter throws `NotImplementedException`.** The probe that found the
+  registration checked `CanWrite` — true, because the interface declares a setter — and concluded
+  the name could simply be assigned. It cannot. Only calling it says so, and what said so was a test.
+  `Mauime.Hosting` wraps the platform environment instead, delegating everything but the name, so
+  `ApplicationName` and `ContentRootPath` still come from the platform.
+
+### Mauime.Configuration
+
+`AddAppPackageJson` reads a `MauiAsset`; `AddEmbeddedResourceJson` reads an embedded resource, which
+is the path Xamarinme offered and still works. Both layer `appsettings.{environment}.json` over the
+base file. The options object that could be left half-filled is gone, and with it the three ways
+Xamarinme turned a mistake into a `NullReferenceException` out of `Build()` — or, for a wrong
+prefix, into an empty configuration and no error at all.
+
+The parsing is `Microsoft.Extensions.Configuration.Json`'s. Xamarinme vendored a copy of Microsoft's
+Newtonsoft-era parser and froze it; this references the maintained one. That is the opposite call
+from `Mauime.Nfc`'s, and deliberately so: NdefLibrary was a dead 2017 package, while this is a live
+first-party component, and reimplementing it would have been the same vendoring mistake in newer
+clothes.
+
+**A guess got corrected here too.** The obvious expectation was that Microsoft's parser renders a
+JSON `true` as `"true"` where Newtonsoft rendered `"True"`. It does not — `JsonElement.ToString()`
+also produces `"True"`, and the test asserting otherwise failed. The one real difference is a JSON
+`null`: `""` before, absent now. The Xamarinme README's claim that
+`Configuration["Logging:IncludeScopes"]` reads `false` was simply wrong, and was never about the
+parser being old.
+
+The app-package path has no coverage: MAUI's `FileSystem` on the net10.0 slice is the
+reference-assembly stub and throws. Both paths funnel into the same layering code, so what is
+untested is the four lines that open the asset.
+
+### Mauime.WebHostPatch
+
+No packages, no forks — a `Microsoft.AspNetCore.App` framework reference and nothing else.
+`IMauimeWebHost` starts and stops a `WebApplication` on Kestrel and reports the address it bound to,
+read from the server rather than the options so a `Port` of 0 reports the port the operating system
+chose. Listening on every interface reports the machine's LAN address rather than `0.0.0.0`.
+
+`NetworkAddress.GetLocalAddress()` replaces the demo's `NetworkHelper`, with its bug fixed: that
+version picked the first qualifying interface and only then filtered its addresses, so a machine
+whose first interface held nothing but a link-local address reported none at all.
+
+**These tests start a real Kestrel and make real requests to it** — bind, serve, stop, rebind the
+freed port, restart. The claim that .NET 10 needs no patch is worth more demonstrated than asserted.
+Doing it turned up that `ListenLocalhost(0)` is refused by Kestrel, since it binds both loopback
+addresses and they would get different ports; binding `127.0.0.1` explicitly is the fix.
+
+### Documentation is now generated and enforced
+
+`GenerateDocumentationFile` is on for the four `Mauime.*` libraries, so CS1591 requires every public
+member to be documented and the packages will ship IntelliSense. Blazorme had to leave this off
+because its surface had no XML docs at all; here they came with the code. Keyed on project name
+rather than `IsPackable`, because `Directory.Build.props` is imported before the project body sets
+it.
+
+176 tests, green in Debug and Release. Every new test was proven by breaking what it guards:
+reversing the configuration overlay order failed 1, ignoring the requested environment name failed
+7, and reporting the configured port instead of the bound one failed 4.
+
 ## Decisions taken before Phase 0
 
 - **Fresh git history.** Mauime does not carry Xamarinme's 153 commits.

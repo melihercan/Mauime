@@ -11,9 +11,9 @@ are being replaced library by library. Nothing under `Mauime.*` has been publish
 | Package | Replaces | Status |
 |---|---|---|
 | `Mauime.Nfc` | `Xamarinme.Nfc` (never published) | **Ported** — Android and iOS |
-| `Mauime.Configuration` | `Xamarinme.Configuration` 1.0.2 | Project set up, no code yet |
-| `Mauime.Hosting` | `Xamarinme.Hosting` 1.0.3 | Project set up, no code yet |
-| `Mauime.WebHostPatch` | `Xamarinme.WebHostPatch` 1.0.0 | Project set up, no code yet |
+| `Mauime.Configuration` | `Xamarinme.Configuration` 1.0.2 | **Ported** |
+| `Mauime.Hosting` | `Xamarinme.Hosting` 1.0.3 | **Ported** |
+| `Mauime.WebHostPatch` | `Xamarinme.WebHostPatch` 1.0.0 | **Ported** — no patch needed on .NET 10 |
 
 Each multi-targets `net10.0`, `net10.0-android`, `net10.0-ios`, `net10.0-maccatalyst` and
 `net10.0-windows10.0.19041.0`.

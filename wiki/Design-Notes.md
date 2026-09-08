@@ -93,56 +93,75 @@ The first question, per library, was whether it should exist at all. Verified ra
 a `net10.0-android` probe project was built to check the MAUI API, and the legacy projects were built
 to check what still compiles.
 
-### `Xamarinme.Hosting` → `MauiAppBuilder`
+### `Xamarinme.Hosting` → `Mauime.Hosting`, ported and much smaller
 
-`XamarinHostBuilder` exposes `Configuration`, `Services`, `HostEnvironment` and `Logging`, and a
-`Build()`. `MauiAppBuilder` exposes `Configuration` (a `ConfigurationManager`), `Services` and
-`Logging`, and a `Build()` — member for member, confirmed by compiling against it.
-`XamarinHostConfiguration` is a copy of Blazor's `WebAssemblyHostConfiguration`;
-`ConfigurationManager` is the maintained equivalent of the same idea.
+`XamarinHostBuilder` exposed Configuration, Services, HostEnvironment and Logging, and a `Build()`.
+`MauiAppBuilder` exposes the same, member for member. `XamarinHostConfiguration` is a copy of
+Blazor's `WebAssemblyHostConfiguration`; `ConfigurationManager` is the maintained equivalent. And
+**MAUI registers an `IHostEnvironment` of its own** — which Phase 0 could not confirm and Phase 3
+did.
 
-What MAUI does **not** give you is the environment name. Xamarin had no usable environment
-variables, so `XamarinHostBuilder` reads a `XAMARIN_ENVIRONMENT` entry out of `appsettings.json`
-instead. That is the only part of this library with anything left to do.
+So the only gap is that MAUI's environment always reports `Production`. That is what
+`Mauime.Hosting` fills, and it is the whole library.
 
-`XamarinHost` itself must not be carried over: it implements `IHost` and then throws
+**It wraps rather than assigns**, because `MauiHostEnvironment.EnvironmentName` throws
+`NotImplementedException` from its setter. The interface declares the property as settable and the
+type reports `CanWrite`, so nothing short of calling it reveals otherwise — the probe that found the
+registration got this wrong, and a test caught it. Everything but the name is delegated, so
+`ApplicationName` and `ContentRootPath` still come from the platform, including their failure modes.
+
+`XamarinHost` did not come across at all: it implemented `IHost` and threw
 `NotImplementedException` from both `StartAsync` and `StopAsync`.
 
-### `Xamarinme.Configuration` → `MauiAsset` plus `AddJsonStream`
+### `Xamarinme.Configuration` → `Mauime.Configuration`, ported
 
-The library is an embedded-resource JSON provider wrapped around a vendored copy of Microsoft's
-**Newtonsoft-era** `JsonConfigurationFileParser` — the one Microsoft itself replaced with a
-System.Text.Json implementation in .NET Core 3.0. Keeping it means keeping Newtonsoft.
+Two ways in — `AddAppPackageJson` for a `MauiAsset`, `AddEmbeddedResourceJson` for the embedded
+resource Xamarinme used — both layering `appsettings.{environment}.json` over the base file.
 
-`FileSystem.OpenAppPackageFileAsync` exists in MAUI and reads a `MauiAsset`, confirmed by compiling
-against it. `builder.Configuration.AddJsonStream(...)` does **not** compile out of the box: MAUI does
-not reference `Microsoft.Extensions.Configuration.Json` transitively, so replacing this library costs
-a package reference as well as a few lines.
+**The parser is Microsoft's, referenced not vendored.** This is the opposite call from
+`Mauime.Nfc`'s, and deliberately: NdefLibrary was a dead 2017 package sitting in the public API,
+while `Microsoft.Extensions.Configuration.Json` is a live first-party component. Reimplementing it
+to keep a zero-dependency badge would have been the same vendoring mistake Xamarinme made, in newer
+clothes. MAUI does not reference it, which is the one thing this package supplies that an app could
+not already do in a line.
 
-Carrying the vendored parser forward would also carry its rendering: Newtonsoft renders a JSON `true`
-as `"True"` and a JSON `null` as `""`, where Microsoft's parser emits `"true"` and `null`. Both are
-pinned in `ConfigurationCharacterizationTests`. The library's own README claims
-`Configuration["Logging:IncludeScopes"]` reads `false`; it reads `False`.
+The rendering differences are narrower than they look, and were measured rather than guessed. Both
+parsers render a JSON `true` as `"True"`, through `bool.ToString()` and `JsonElement.ToString()`
+respectively — the obvious assumption that Microsoft emits the raw token is wrong, and the test that
+assumed it failed. **The one real difference is a JSON `null`**: `""` before, absent now.
 
-### `Xamarinme.WebHostPatch` → nothing, on .NET 10
+The options object is gone, and with it three ways to turn a mistake into a `NullReferenceException`
+out of `Build()` — or, for a wrong prefix, into an empty configuration and no error at all.
 
-Two forks of Microsoft code, for two Mono-era problems, and **both causes are gone**:
+**The app-package path has no coverage.** MAUI's `FileSystem` on the net10.0 slice is the
+reference-assembly stub and throws, so what is untested is the four lines that open the asset; both
+paths funnel into the same layering code.
+
+### `Xamarinme.WebHostPatch` → `Mauime.WebHostPatch`, with no patch in it
+
+The two forks existed for two Mono-era problems, and **both causes are gone**:
 
 1. `Microsoft.Net.Http.Headers` 2.2.0 calls `InplaceStringBuilder`, which
    `Microsoft.Extensions.Primitives` 5.0 deleted. The vendored fork restores the type and stamps
    itself 5.9.0.0 so it wins at bind time. This exists **only** because of the ASP.NET Core 2.2.0
-   pin — on .NET 10 there is no 2.2-versus-5.0 mismatch to work around.
+   pin.
 2. `Console.CancelKeyPress` threw on Mono, so `ConsoleLifetime` and `WebHostExtensions.RunAsync`
-   were forked to route around it. Modern code uses `WebApplication` and `RunAsync(token)` and never
-   enters that path.
+   were forked to route around it.
 
-It is also written against `IWebHost`, `WebHostBuilder`, `IHostingEnvironment` and
-`IApplicationLifetime` — the removed ASP.NET Core 2.x API.
+On .NET 10 a web host inside a MAUI app needs a `Microsoft.AspNetCore.App` framework reference and
+nothing else, verified by compiling `WebApplication` plus `UseKestrel` against `net10.0-android` and
+then by starting a real server in the tests. The package has **no NuGet dependencies**. What is left
+is the part that was never the patch: starting and stopping the server, and knowing what address to
+show the user.
 
-**And it is not merely obsolete, it is unsafe.** Its 2.2.0 pins carry a critical advisory
+The name is kept for continuity with the 30,366 downloads of `Xamarinme.WebHostPatch`, and is now a
+slight misnomer. That is a deliberate trade.
+
+**The old package is not merely obsolete, it is unsafe.** Its 2.2.0 pins carry a critical advisory
 ([GHSA-5rrx-jjjq-q2r5](https://github.com/advisories/GHSA-5rrx-jjjq-q2r5), Kestrel) and a moderate
-one ([GHSA-prrf-397v-83xh](https://github.com/advisories/GHSA-prrf-397v-83xh), IIS). Version 1.0.0 is
-on nuget.org with 30,366 downloads and every consumer inherits both.
+one ([GHSA-prrf-397v-83xh](https://github.com/advisories/GHSA-prrf-397v-83xh), IIS), and its forked
+Primitives shadows the real assembly for anything sharing an output directory — which is why this
+repository needs two test projects.
 
 ### `Xamarinme.Nfc` → `Mauime.Nfc`, ported
 

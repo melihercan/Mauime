@@ -81,8 +81,10 @@ public class ConfigurationCharacterizationTests
     public void Booleans_are_rendered_with_a_capital_first_letter()
     {
         // Newtonsoft renders a JValue of type Boolean through bool.ToString(), which is "True" /
-        // "False". Microsoft's own parser emits the raw JSON token, "true" / "false". Binding via
-        // GetValue<bool>() copes with either; a string comparison against "false" does not.
+        // "False". Microsoft's own parser does the same, through JsonElement.ToString() — checked
+        // against Mauime.Configuration rather than assumed, because the obvious guess was that they
+        // differed here. Binding via GetValue<bool>() copes; a string comparison against "false"
+        // does not, and the library's README makes exactly that mistake about its own output.
         var configuration = Build(Basic);
 
         configuration["Enabled"].Should().Be("True");

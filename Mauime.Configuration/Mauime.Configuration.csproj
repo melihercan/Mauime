@@ -18,6 +18,17 @@
       Since .NET 8 the UseMaui* properties no longer add the package reference implicitly (MA002).
     -->
     <PackageReference Include="Microsoft.Maui.Core" Version="$(MauiVersion)" />
+
+    <!--
+      The one thing this package adds that an app could not already do in a line: MAUI references
+      Microsoft.Extensions.Configuration but not the JSON provider, so builder.Configuration has no
+      AddJsonStream. Pinned at 10.0.0 to match the Configuration that Microsoft.Maui.Core already
+      resolves, rather than pulling the whole graph up a patch line as a side effect.
+
+      Xamarinme vendored a copy of Microsoft's Newtonsoft-era parser instead, and it drifted. This
+      is Microsoft's, maintained.
+    -->
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.0" />
   </ItemGroup>
 
 </Project>

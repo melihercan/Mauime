@@ -159,7 +159,7 @@ version.
 
 ## Two test projects, and why
 
-120 tests, all passing, in Debug and Release.
+176 tests, all passing, in Debug and Release.
 
 `Mauime.Tests` covers the Mauime libraries and the API baseline. `Legacy.Tests` covers `legacy/`.
 **They are separate because they have to be.** `legacy/WebHostPatch`'s vendored
@@ -174,6 +174,9 @@ pinned for. `Legacy.Tests` dies with `legacy/`.
 | File | Covers |
 |---|---|
 | `NdefTests` | The NDEF codec, against byte vectors captured from NdefLibrary 4.1.0's own output. |
+| `ConfigurationTests` | `Mauime.Configuration`'s embedded-resource path: key flattening, the environment overlay, missing-file handling, argument validation. |
+| `HostingTests` | That MAUI's own host environment always says `Production`, and that `Mauime.Hosting` changes it by wrapping rather than assigning. |
+| `WebHostTests` | `IMauimeWebHost`, by starting a real Kestrel on loopback and making real requests to it. |
 | `NfcRegistrationTests` | `UseMauimeNfc`, and the platform-neutral implementation's refusals. |
 | `PublicApiSurfaceTests` | The whole public surface, legacy and Mauime, against `PublicApi.approved.txt`. |
 | `MultiTargetingTests` | That every library is built for every expected framework, that every platform slice exposes the same surface as the `net10.0` one, and that every slice records its reference paths. |
@@ -189,12 +192,21 @@ pinned for. `Legacy.Tests` dies with `legacy/`.
 | `WebHostPatchCharacterizationTests` | `ConsoleLifetimePatch`'s status logging and lifetime callbacks. |
 | `KnownDefectTests` | One test per defect still in `legacy/`. |
 
-Two gaps are stated rather than papered over. `RunPatchedAsync` has no behavioural coverage — it
-needs a live ASP.NET Core 2.2 `IWebHost`. And **`Mauime.Nfc`'s Android and iOS implementations have
-none either**: a net10.0 test project resolves the net10.0 slice, which is the one with no
-implementation, so those two are held by the API baseline, `MultiTargetingTests` and source pins.
-`LIMITATION_The_Android_and_iOS_implementations_have_no_behavioural_coverage` asserts that gap, so
-it fails if it ever closes.
+Three gaps are stated rather than papered over, all for the same reason — a net10.0 test project
+resolves the net10.0 slice:
+
+- **`Mauime.Nfc`'s Android and iOS implementations** have no behavioural coverage. They are held by
+  the API baseline, `MultiTargetingTests` and source pins.
+  `LIMITATION_The_Android_and_iOS_implementations_have_no_behavioural_coverage` asserts the gap, so
+  it fails if it ever closes.
+- **`Mauime.Configuration.AddAppPackageJson`** is untested: MAUI's `FileSystem` on that slice is the
+  reference-assembly stub and throws. Both it and the embedded-resource path funnel into the same
+  layering code, so what is uncovered is the four lines that open the asset.
+- **`RunPatchedAsync`** in `legacy/WebHostPatch` needs a live ASP.NET Core 2.2 `IWebHost`, and is
+  covered by the API baseline only.
+
+`Mauime.WebHostPatch`, by contrast, is covered by starting a real Kestrel on loopback and making
+real requests to it — bind, serve, stop, rebind the freed port, restart.
 
 ## The defect-test convention
 
@@ -242,6 +254,9 @@ breaking the thing it guards:
 | Delete one target framework's build output | 1 failure |
 | Delete one slice's `Mauime.ReferencePaths.txt` | 1 failure |
 | Swap message-begin for message-end in the NDEF serializer | 10 failures |
+| Layer the configuration overlay before the base file | 1 failure |
+| Ignore the requested environment name | 7 failures |
+| Report the configured port instead of the bound one | 4 failures |
 | Ask for an immutable `PendingIntent` again | 1 failure |
 | Let the unsupported platform succeed silently | 1 failure |
 

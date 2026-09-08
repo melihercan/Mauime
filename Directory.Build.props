@@ -11,6 +11,16 @@
   </PropertyGroup>
 
   <!--
+    Public members are documented, so the XML file is generated and CS1591 holds it that way. This
+    is the opposite of Blazorme, where the surface had no XML docs at all and turning this on would
+    have emitted hundreds of warnings; here the docs came with the code. Test projects are excluded:
+    their members are not API.
+  -->
+  <PropertyGroup Condition="$(MSBuildProjectName.StartsWith('Mauime.')) AND !$(MSBuildProjectName.EndsWith('.Tests'))">
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <!--
     The MAUI target frameworks, in one place rather than copied into four csprojs.
     Libraries opt in with <TargetFrameworks>$(MauimeTargetFrameworks)</TargetFrameworks>;
     Mauime.Tests stays on plain net10.0 and ignores this.
