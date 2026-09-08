@@ -138,8 +138,20 @@ and fails at the final step. Created on nuget.org under Account → Trusted Publ
 | Scopes | Push new packages and package versions |
 | Glob | `Me.Toolkit.Maui.*` |
 
-The policy binds to the repository **ID**, not just its name, so a policy created for another
-repository can never cover this one however wide its glob.
+**Renaming the GitHub repository breaks the policy.** This repository was renamed from `Mauime`,
+and the next publish failed at the login step with
+
+```
+Token exchange failed (HTTP 401)
+No matching trust policy owned by user 'melihercan' was found.
+```
+
+The policy records the repository name, and a rename leaves it pointing at a name that no longer
+exists. Nothing warns you: the policy still shows as **Active**, and the failure appears only on the
+next publish. After renaming the repository, edit the policy's **Repository** field to match.
+
+The failure is at least loud and harmless — the token exchange happens before anything is pushed, so
+a stale policy cannot publish something wrong, it just cannot publish at all.
 
 Because `Me.Toolkit.Maui.*` are new IDs with no existing owner, the glob has to permit **new** packages, not
 just new versions of existing ones — that is the "Push new packages and package versions" scope
