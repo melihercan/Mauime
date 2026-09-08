@@ -9,7 +9,7 @@ A port of [Xamarinme](https://github.com/melihercan/Xamarinme) to .NET MAUI. Xam
 this is a port, not a framework bump: new repository, fresh git history, **new package IDs**
 (`Me.Toolkit.Maui.*`), and a per-library question of whether the library should exist at all.
 
-**Three of the four are published at `26.9.8`; `Me.Toolkit.Maui.Nfc` is held back.** The work is phased, one commit per phase on `master`, and each phase
+**Three of the four are published at `26.9.9`; `Me.Toolkit.Maui.Nfc` is held back.** The work is phased, one commit per phase on `master`, and each phase
 needs a go-ahead. Phases 0 (characterization), 1 (the MAUI skeleton), 2 (`Me.Toolkit.Maui.Nfc`), 3 (the other
 three libraries) and 4 (retiring `legacy/`, adding CI) are done. **All four libraries are ported and
 the build is clean under `-warnaserror`.** What remains is the demo app, package metadata, and
@@ -150,8 +150,8 @@ under the same project-name condition as documentation generation. `Version`, `P
 independently. `AssemblyVersion`/`FileVersion` derive from `Version` — never pin them, which is the
 Xamarinme.Configuration defect.
 
-Versions are date-based: `<Version>26.09.08</Version>`, which NuGet normalises to `26.9.8`. When
-publishing lands, **tag with the csproj spelling** (`v26.09.08`), because the version check compares
+Versions are date-based: `<Version>26.09.09</Version>`, which NuGet normalises to `26.9.9`. When
+publishing lands, **tag with the csproj spelling** (`v26.09.09`), because the version check compares
 raw csproj text.
 
 Verify a packaging change by **unzipping the `.nupkg`**, not by reading the build log.
@@ -241,7 +241,7 @@ These are settled. Do not reopen them without being asked.
 - **All four libraries are ported.** The recommendation was `Me.Toolkit.Maui.Nfc` alone; the decision was to
   port all four. `Me.Toolkit.Maui.WebHostPatch` therefore became a Kestrel-in-MAUI convenience layer, not a
   fork of Microsoft code — both of the original patches' causes are gone on .NET 10.
-- **`26.9.8`, date-based**, matching Blazorme and Utilme. Publishing it rules out ever shipping a
+- **`26.9.9`, date-based**, matching Blazorme and Utilme. Publishing it rules out ever shipping a
   `1.x`; that was weighed and accepted.
 - **.NET 10 only.** No `net8.0`/`net9.0` slices. MAUI apps on older .NET cannot use these packages,
   deliberately — there are no consumers to strand, and `Me.Toolkit.Maui.WebHostPatch` would need ASP.NET Core

@@ -556,6 +556,43 @@ The tag resolver and the version check were exercised locally across every tag s
 ones that must be rejected. `v26.09.08` is the tag; `v26.9.8` fails the version check, because the
 comparison is against the raw csproj text and NuGet normalises only afterwards.
 
+## Phase 9 — the name, and a package that carried the old one
+
+`Mauime` cannot be published. nuget.org refuses any package ID beginning with `Maui`, and there is no
+API to ask in advance — the only way to learn a prefix is reserved is to be refused by a push. That
+took four attempts to establish, and two of them failed on mistakes in the workflow rather than on
+anything about the packages:
+
+| Attempt | Result |
+|---|---|
+| `Mauime.*` | `409 The package ID is reserved` — reported as success, because `--skip-duplicate` cannot tell a refusal from a genuine duplicate |
+| `Toolkit.Mauime.*` | `403` — the Trusted Publishing policy still had the old glob |
+| `Toolkit.Mauime.*` | `409 This package ID has been reserved` — `Toolkit.*` belongs to someone too |
+| `Me.Toolkit.Maui.*` | `201 Created` |
+
+`Toolkit.*` was chosen after observing that `Toolkit.Data` and `Toolkit.CodeBase` exist and
+concluding the prefix was free. That inference was wrong in a way worth recording: a reservation
+blocks only *new* IDs, which is the very reason `Xamarinme.*` survives while `Mauime.*` does not. The
+same rule was applied in one direction and not the other.
+
+`--skip-duplicate` no longer runs on a tag push. It exists for deliberately re-running a release
+that is already out, and it turned three hard refusals into a green tick claiming success.
+
+### 26.9.8 shipped the new ID around the old assemblies
+
+To find out whether a prefix was acceptable, only `<PackageId>` was changed — four lines, rather
+than renaming the repository before knowing the name was usable. That was the right order, and its
+consequence was missed: 26.9.8 published as `Me.Toolkit.Maui.Configuration` containing
+`lib/net10.0/Mauime.Configuration.dll`. Consuming it meant writing `using Mauime.Configuration;`
+against a package called `Me.Toolkit.Maui.Configuration`.
+
+The rename landed afterwards and the *new* packing was verified, but the already-published version
+was never re-examined. 26.9.9 is the same code with the assemblies and namespaces matching the ID;
+26.9.8 is unlisted.
+
+The check that would have caught it — read what is inside the package that is actually on nuget.org,
+not the one just built — is worth more than any of the build-time verification around it.
+
 ## Settled, and not to be reopened
 
 - **`26.9.8` is the version.** Date-based, matching Blazorme and Utilme. Publishing it closes the

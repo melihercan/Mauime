@@ -108,8 +108,8 @@ jobs:
           echo "Version:  ${version:-(not checked)}"
 
       # Catches the classic release bug: tagging one version while a csproj still says another.
-      # Note the csproj values are written as 26.09.08 and NuGet normalises them to 26.9.8, so the
-      # tag must carry the csproj spelling, i.e. v26.09.08.
+      # Note the csproj values are written as 26.09.09 and NuGet normalises them to 26.9.9, so the
+      # tag must carry the csproj spelling, i.e. v26.09.09.
       - name: Verify the tag matches the project versions
         if: steps.targets.outputs.version != ''
         run: |
@@ -195,6 +195,37 @@ jobs:
             }
 
             Write-Host "$($package.Name): $($frameworks -join ', ')"
+          }
+
+          if ($failed) { exit 1 }
+
+      # 26.9.8 was published with the right package ID wrapped around assemblies still called
+      # Mauime.*, because only <PackageId> had been changed at that point to test whether the prefix
+      # was accepted at all. Everything built and packed correctly; the mismatch was invisible until
+      # someone unzipped what was already on nuget.org. A published version cannot be replaced, so
+      # this is checked before the push rather than trusted afterwards.
+      - name: Verify every assembly matches its package ID
+        shell: pwsh
+        run: |
+          $failed = $false
+
+          foreach ($package in Get-ChildItem artifacts/*.nupkg) {
+            # Me.Toolkit.Maui.Hosting.26.9.9.nupkg -> Me.Toolkit.Maui.Hosting
+            $id = $package.Name -replace '\.\d+\.\d+\.\d+(\.\d+)?(-[A-Za-z0-9.-]+)?\.nupkg$', ''
+
+            $zip = [IO.Compression.ZipFile]::OpenRead($package.FullName)
+            $assemblies = $zip.Entries.FullName | Where-Object { $_ -like 'lib/*' -and $_ -like '*.dll' }
+            $zip.Dispose()
+
+            $wrong = $assemblies | Where-Object { [IO.Path]::GetFileNameWithoutExtension($_) -ne $id }
+            if ($wrong) {
+              foreach ($entry in $wrong) {
+                Write-Host "::error::$($package.Name) declares id $id but contains $entry"
+              }
+              $failed = $true
+            } else {
+              Write-Host "$($package.Name): all $($assemblies.Count) assemblies named $id"
+            }
           }
 
           if ($failed) { exit 1 }

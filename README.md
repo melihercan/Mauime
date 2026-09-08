@@ -3,7 +3,7 @@
 Libraries and plugins for .NET MAUI applications, ported from
 [Xamarinme](https://github.com/melihercan/Xamarinme) now that Xamarin is retired.
 
-**Three of the four are published at `26.9.8`** — `Me.Toolkit.Maui.Configuration`,
+**Three of the four are published at `26.9.9`** — `Me.Toolkit.Maui.Configuration`,
 `Me.Toolkit.Maui.Hosting` and `Me.Toolkit.Maui.WebHostPatch`. `Me.Toolkit.Maui.Nfc` is ported and
 tested but held back: its reading session is unfinished and has never been used against a tag.
 

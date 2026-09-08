@@ -224,10 +224,10 @@ identity to the binder.
 
 ### Versions are date-based
 
-The projects declare `<Version>26.09.08</Version>` and **NuGet normalises that to `26.9.8`**, which
+The projects declare `<Version>26.09.09</Version>` and **NuGet normalises that to `26.9.9`**, which
 is what the file is called. It matches Blazorme and Utilme.
 
-When publishing lands, **tag with the csproj spelling** — `v26.09.08`, not `v26.9.7`-style
+When publishing lands, **tag with the csproj spelling** — `v26.09.09`, not `v26.9.7`-style
 normalised text — because the version check compares against the raw csproj string.
 
 ### What is in a package

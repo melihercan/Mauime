@@ -7,12 +7,13 @@
     <AssemblyName>Me.Toolkit.Maui.WebHostPatch</AssemblyName>
     <RootNamespace>Me.Toolkit.Maui.WebHostPatch</RootNamespace>
     <PackageId>Me.Toolkit.Maui.WebHostPatch</PackageId>
-    <Version>26.09.08</Version>
+    <Version>26.09.09</Version>
     <Product>Me.Toolkit.Maui.WebHostPatch</Product>
     <Description>Run an ASP.NET Core web host and Kestrel server inside a .NET MAUI app: start it, stop it, and find out what address to show the user.
 ASP.NET Core comes from netstandard2.0 packages, which is what lets it run on Android and iOS: the Microsoft.AspNetCore.App shared framework has no runtime pack for any mobile platform. Despite the name there are no patches left in it.</Description>
     <PackageTags>maui kestrel aspnetcore webhost server</PackageTags>
-    <PackageReleaseNotes>First release. Replaces Xamarinme.WebHostPatch 1.0.0.
+    <PackageReleaseNotes>26.9.9 renames the assemblies and namespaces to match the package ID. 26.9.8 shipped the correct package ID around assemblies still called Mauime.*, so consuming it meant writing using Mauime.X against a package called Me.Toolkit.Maui.X; it is unlisted. Nothing else changed.
+First release. Replaces Xamarinme.WebHostPatch 1.0.0.
 The approach is unchanged, because it is the only one that works: ASP.NET Core as netstandard2.0 packages, copied into the app like any assembly. The Microsoft.AspNetCore.App shared framework ships no runtime pack for android, ios or maccatalyst, so a framework reference compiles a library and then fails the consuming app with NETSDK1082.
 What changed is the version and the patching. The packages are the 2.3.x servicing line rather than 2.2.0, which means no known advisories - 2.2.0 carries a critical one in Microsoft.AspNetCore.Server.Kestrel.Core (GHSA-5rrx-jjjq-q2r5) and a moderate one in Microsoft.AspNetCore.Server.IIS (GHSA-prrf-397v-83xh).
 Both of Xamarinme's forks of Microsoft's code are gone. The vendored Microsoft.Extensions.Primitives, stamped 5.9.0.0 to outrank the real assembly, existed because Microsoft.Net.Http.Headers 2.2.0 called an InplaceStringBuilder that Primitives 5.0 had deleted; 2.3.11 no longer references that type. The WebHostExtensions fork existed because Console.CancelKeyPress threw on Mono; that call lives in RunAsync, and this starts and stops the host explicitly instead, which is what an app wants anyway. The generic host's ConsoleLifetime is not involved either.

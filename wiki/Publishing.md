@@ -103,14 +103,14 @@ consequence.
 
 ## Tag with the csproj spelling
 
-The projects declare `<Version>26.09.08</Version>` and NuGet normalises that to `26.9.8`. The
+The projects declare `<Version>26.09.09</Version>` and NuGet normalises that to `26.9.9`. The
 verification step compares against the **raw csproj text**, so the tag is:
 
 ```
-v26.09.08
+v26.09.09
 ```
 
-not `v26.9.8`. Tagging the normalised form fails the version check — which is the point: it is the
+not `v26.9.9`. Tagging the normalised form fails the version check — which is the point: it is the
 same check that catches tagging a version no project declares.
 
 ## Trusted Publishing, not an API key
@@ -155,7 +155,7 @@ itself, and is worth doing once before the first real tag.
 
 ## Versioning
 
-Date-based: `26.09.08`, normalised by NuGet to `26.9.8`, matching the convention used across these
+Date-based: `26.09.09`, normalised by NuGet to `26.9.9`, matching the convention used across these
 repositories. Bump `<Version>` in each `.csproj` together with its `<PackageReleaseNotes>`.
 
 `AssemblyVersion` and `FileVersion` are left to derive from `Version` rather than being set
