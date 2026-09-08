@@ -3,14 +3,14 @@
 Libraries and plugins for .NET MAUI applications, ported from
 [Xamarinme](https://github.com/melihercan/Xamarinme) now that Xamarin is retired.
 
-**All four libraries are ported; nothing is published yet.** What remains is a demo app, package
-metadata and publishing.
+**All four libraries are ported and packaged at `26.9.8`; nothing is published yet.** What remains
+is a demo app and publishing.
 
 ## Planned packages
 
 | Package | Replaces | Status |
 |---|---|---|
-| `Mauime.Nfc` | `Xamarinme.Nfc` (never published) | **Ported** — Android and iOS |
+| `Mauime.Nfc` | `Xamarinme.Nfc` (never published) | Ported — Android and iOS |
 | `Mauime.Configuration` | `Xamarinme.Configuration` 1.0.2 | **Ported** |
 | `Mauime.Hosting` | `Xamarinme.Hosting` 1.0.3 | **Ported** |
 | `Mauime.WebHostPatch` | `Xamarinme.WebHostPatch` 1.0.0 | **Ported** — no patch needed on .NET 10 |

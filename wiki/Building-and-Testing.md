@@ -197,6 +197,58 @@ checked by breaking the thing it guards:
 
 The suite is then run 30 times in a row against the restored tree, with no flakes.
 
+## Packaging
+
+```powershell
+dotnet pack Mauime.slnx -c Release
+```
+
+`GeneratePackageOnBuild` is deliberately **absent**, so a plain build drops nothing into `bin/`.
+Xamarinme's projects set it, which is why building that repository quietly produced
+`Xamarinme.Configuration.1.0.3.nupkg` and friends — versions that were never published and did not
+match what was on nuget.org.
+
+Shared identity — authors, copyright, licence, icon, readme, URLs — lives in
+`Directory.Build.props`, under the same project-name condition as documentation generation. What
+differs per package — `Version`, `Product`, `Description`, `PackageTags`, `PackageReleaseNotes` —
+stays in the csproj, so the four can be versioned and described independently.
+
+`AssemblyVersion` and `FileVersion` are left to derive from `Version`. Xamarinme.Configuration
+pinned `AssemblyVersion` at 1.0.0 while shipping 1.0.3, so every 1.0.x assembly presented the same
+identity to the binder.
+
+### Versions are date-based
+
+The projects declare `<Version>26.09.08</Version>` and **NuGet normalises that to `26.9.8`**, which
+is what the file is called. It matches Blazorme and Utilme.
+
+When publishing lands, **tag with the csproj spelling** — `v26.09.08`, not `v26.9.7`-style
+normalised text — because the version check compares against the raw csproj string.
+
+### What is in a package
+
+Each one carries five slices, each with its XML documentation, plus the README and the icon:
+
+```
+lib/net10.0/                        lib/net10.0-maccatalyst26.0/
+lib/net10.0-android36.0/            lib/net10.0-windows10.0.19041/
+lib/net10.0-ios26.0/
+me.png   README.md
+```
+
+Note the **platform versions in those folder names**. They come from the SDK's defaults, and NuGet
+requires a consumer's platform version to be at least the package's, so a project pinned to
+`net10.0-android35.0` would not resolve the Android asset. Consumers on the plain `net10.0-android`
+of the .NET 10 SDK are fine.
+
+Dependencies are what they should be: `Microsoft.Maui.Core` everywhere, plus
+`Microsoft.Extensions.Configuration.Json` for `Mauime.Configuration` alone, and a
+`Microsoft.AspNetCore.App` framework reference rather than any package for `Mauime.WebHostPatch`.
+
+**This was checked by unzipping the four `.nupkg` files**, not by reading the build log — the id,
+version, icon, readme, copyright, tags, dependency groups, every slice, every XML file, and the icon
+compared byte for byte against `doc/me.png`.
+
 ## CI
 
 `.github/workflows/ci.yml` builds and tests on every push and pull request to `master`, and can be

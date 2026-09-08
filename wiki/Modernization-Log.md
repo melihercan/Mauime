@@ -334,6 +334,42 @@ machine, which is the same platform the job uses.
 Publishing is not set up yet: it needs the package versions and metadata that have not been written,
 and a NuGet Trusted Publishing policy scoped to `Mauime.*` and bound to this repository.
 
+## Phase 5 — package metadata
+
+All four packages are ready to publish, and none of them has been. `dotnet pack` produces
+`Mauime.Configuration`, `Mauime.Hosting`, `Mauime.Nfc` and `Mauime.WebHostPatch` at **26.9.8**, each
+with five target-framework slices, XML documentation for every slice, a README and the icon.
+
+Versions are date-based — `<Version>26.09.08</Version>`, which NuGet normalises to `26.9.8` —
+matching Blazorme and Utilme. The tag spelling trap comes with it: a version check compares raw
+csproj text, so the tag has to be `v26.09.08`.
+
+Shared identity lives in `Directory.Build.props`; `Version`, `Product`, `Description`,
+`PackageTags` and `PackageReleaseNotes` stay per project so the four can move independently.
+`GeneratePackageOnBuild` is deliberately absent — Xamarinme set it, which is why building that
+repository quietly produced `.nupkg` files at versions that were never published.
+
+The release notes say what each package replaces and what changed, rather than "Creation." — which
+is what `Xamarinme.WebHostPatch` 1.0.0 shipped with. `Mauime.Configuration`'s names the one
+behavioural difference a Xamarinme user would trip over: a JSON `null` used to read as an empty
+string and is now simply absent.
+
+**Verified by unzipping the four packages**, not by reading the build log: id, version, icon,
+readme, copyright, tags, dependency groups, all five slices, all five XML files, and the icon
+compared byte for byte against `doc/me.png`. A plain build was confirmed to emit no package at all.
+
+### The Xamarinme packages stay as they are
+
+Decided rather than defaulted. `Blazorme.TestHost` looked like a precedent — a broken 1.0.0 rescued
+by multi-targeting a new version back to net8.0 — but it does not transfer: that worked because it
+was the **same package ID**, so existing consumers could resolve a newer, working version of the
+package they already referenced. `Xamarinme.WebHostPatch` and `Mauime.WebHostPatch` are different
+IDs, and NuGet has no redirect between IDs at any target framework. Targeting further back would not
+help either, since the implementation is `WebApplication` on ASP.NET Core 10.
+
+The only mechanism that crosses package IDs is deprecation with an alternate package, and the
+decision is not to deprecate.
+
 ## Decisions taken before Phase 0
 
 - **Fresh git history.** Mauime does not carry Xamarinme's 153 commits.

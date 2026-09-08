@@ -21,6 +21,33 @@
   </PropertyGroup>
 
   <!--
+    Package identity that is the same for every library. What differs per package - Version,
+    Product, Description, PackageTags, PackageReleaseNotes - stays in the csproj, so the four can
+    be versioned and described independently.
+
+    GeneratePackageOnBuild is deliberately absent: publishing is CI's job, and a local build should
+    not litter bin/ with .nupkg files. Use `dotnet pack` when you want one. AssemblyVersion and
+    FileVersion are left to derive from Version - Xamarinme.Configuration pinned AssemblyVersion at
+    1.0.0 while shipping 1.0.3, so every 1.0.x assembly presented the same identity to the binder.
+  -->
+  <PropertyGroup Condition="$(MSBuildProjectName.StartsWith('Mauime.')) AND !$(MSBuildProjectName.EndsWith('.Tests'))">
+    <Authors>melihercan</Authors>
+    <Company>melihercan</Company>
+    <Copyright>melihercan 2020-2026</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageIcon>me.png</PackageIcon>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageProjectUrl>https://github.com/melihercan/Mauime</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/melihercan/Mauime</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+  </PropertyGroup>
+
+  <ItemGroup Condition="$(MSBuildProjectName.StartsWith('Mauime.')) AND !$(MSBuildProjectName.EndsWith('.Tests'))">
+    <None Include="$(MSBuildThisFileDirectory)doc\me.png" Pack="true" PackagePath="" Visible="false" />
+    <None Include="README.md" Pack="true" PackagePath="" />
+  </ItemGroup>
+
+  <!--
     The MAUI target frameworks, in one place rather than copied into four csprojs.
     Libraries opt in with <TargetFrameworks>$(MauimeTargetFrameworks)</TargetFrameworks>;
     Mauime.Tests stays on plain net10.0 and ignores this.

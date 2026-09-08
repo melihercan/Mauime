@@ -3,9 +3,15 @@
 Libraries and plugins for .NET MAUI applications, ported from
 [Xamarinme](https://github.com/melihercan/Xamarinme) now that Xamarin is retired.
 
-**All four libraries are ported; nothing is published yet.** What remains is a demo app, package
-metadata and publishing. The Xamarin sources were imported under `legacy/` for the characterization
-phase and deleted once each library had been replaced — the history is the record.
+**All four libraries are ported and packaged at `26.9.8`; nothing is published yet.** What remains
+is a demo app and publishing. The Xamarin sources were imported under `legacy/` for the
+characterization phase and deleted once each library had been replaced — the history is the record.
+
+The `Xamarinme.*` packages stay on nuget.org exactly as they are, and are **not** deprecated. That
+is a decision, not an oversight: `Blazorme.TestHost` looked like a precedent, but it worked because
+it kept the *same* package ID, so existing consumers could resolve a newer working version. Nothing
+referencing `Xamarinme.WebHostPatch` will ever resolve `Mauime.WebHostPatch` — NuGet has no redirect
+between IDs.
 
 | Planned package | Replaces | Status |
 |---|---|---|

@@ -134,6 +134,31 @@ public member to be documented**. Blazorme had to leave this off; here the docs 
 so keep them coming. Keyed on project name rather than `IsPackable`, because
 `Directory.Build.props` is imported before the project body sets it.
 
+## Packaging
+
+`dotnet pack Mauime.slnx -c Release`. **`GeneratePackageOnBuild` is deliberately absent** — a plain
+build must not drop a `.nupkg` into `bin/`, which is what Xamarinme did at versions that were never
+published.
+
+Shared identity (authors, copyright, licence, icon, readme, URLs) lives in `Directory.Build.props`
+under the same project-name condition as documentation generation. `Version`, `Product`,
+`Description`, `PackageTags` and `PackageReleaseNotes` stay per project so the four can move
+independently. `AssemblyVersion`/`FileVersion` derive from `Version` — never pin them, which is the
+Xamarinme.Configuration defect.
+
+Versions are date-based: `<Version>26.09.08</Version>`, which NuGet normalises to `26.9.8`. When
+publishing lands, **tag with the csproj spelling** (`v26.09.08`), because the version check compares
+raw csproj text.
+
+Verify a packaging change by **unzipping the `.nupkg`**, not by reading the build log.
+
+## The Xamarinme packages are staying as they are
+
+Not deprecated, by decision. `Blazorme.TestHost` is not a precedent for rescuing them: that worked
+because it kept the **same package ID**, so consumers could resolve a newer working version of what
+they already referenced. `Mauime.*` are new IDs, and NuGet has no redirect between IDs at any target
+framework. Do not spend effort trying to reach those consumers through multi-targeting.
+
 ## The API baseline
 
 `PublicApiSurfaceTests` enforces `Mauime.Tests/PublicApi.approved.txt`, which captures every public

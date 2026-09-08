@@ -7,7 +7,16 @@
     <AssemblyName>Mauime.Hosting</AssemblyName>
     <RootNamespace>Mauime.Hosting</RootNamespace>
     <PackageId>Mauime.Hosting</PackageId>
-    <Description>Host environment support for .NET MAUI, extending MauiAppBuilder.</Description>
+    <Version>26.09.08</Version>
+    <Product>Mauime.Hosting</Product>
+    <Description>Sets the host environment name of a .NET MAUI app, so IHostEnvironment.IsDevelopment() means something.
+MAUI registers a host environment of its own, but it always reports Production and its EnvironmentName setter throws. This wraps it.</Description>
+    <PackageTags>maui hosting environment ihostenvironment</PackageTags>
+    <PackageReleaseNotes>First release. Replaces Xamarinme.Hosting 1.0.3, and is deliberately far smaller.
+Xamarinme.Hosting existed because Xamarin had no hosting at all: it built a parallel XamarinHostBuilder exposing Configuration, Services, Logging and an environment, plus an IHost that threw NotImplementedException from both StartAsync and StopAsync. MauiAppBuilder is that builder, and MAUI registers an IHostEnvironment, so the environment name is all that was left to do.
+UseMauimeHosting sets the name. UseMauimeHostingFromConfiguration reads it from a MAUI_ENVIRONMENT key, renamed from XAMARIN_ENVIRONMENT, when IHostEnvironment is first resolved - so it does not matter whether the configuration sources were added before or after.
+The platform environment is wrapped rather than assigned to, because MauiHostEnvironment.EnvironmentName throws from its setter even though the interface declares it. ApplicationName and ContentRootPath still come from the platform.
+There is no Mauime-specific environment interface. Inject the framework's IHostEnvironment.</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>

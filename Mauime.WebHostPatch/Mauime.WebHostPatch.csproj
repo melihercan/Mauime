@@ -7,7 +7,16 @@
     <AssemblyName>Mauime.WebHostPatch</AssemblyName>
     <RootNamespace>Mauime.WebHostPatch</RootNamespace>
     <PackageId>Mauime.WebHostPatch</PackageId>
-    <Description>Run an ASP.NET Core web host and Kestrel server inside a .NET MAUI app.</Description>
+    <Version>26.09.08</Version>
+    <Product>Mauime.WebHostPatch</Product>
+    <Description>Run an ASP.NET Core web host and Kestrel server inside a .NET MAUI app: start it, stop it, and find out what address to show the user.
+Despite the name there is no patch in it. On .NET 10 a web host inside a MAUI app needs a framework reference and nothing else; the name is kept for continuity with Xamarinme.WebHostPatch.</Description>
+    <PackageTags>maui kestrel aspnetcore webhost server</PackageTags>
+    <PackageReleaseNotes>First release. Replaces Xamarinme.WebHostPatch 1.0.0.
+That package was two forks of Microsoft's code, because ASP.NET Core 2.2 on Mono needed them. Console.CancelKeyPress threw, so ConsoleLifetime and WebHostExtensions.RunAsync were reimplemented around it; and Microsoft.Net.Http.Headers 2.2.0 called an InplaceStringBuilder that Microsoft.Extensions.Primitives 5.0 had deleted, so a fork of Primitives stamped 5.9.0.0 was shipped to outrank the real assembly at bind time. Neither cause survives on .NET 10 and neither fork came across: this package has no NuGet dependencies at all.
+IMauimeWebHost starts and stops a WebApplication on Kestrel and reports the address it bound to, read from the server rather than from the options, so a port of 0 reports the port the operating system chose. Listening on every interface reports the machine's LAN address rather than 0.0.0.0.
+NetworkAddress.GetLocalAddress replaces the Xamarinme demo's NetworkHelper, with its bug fixed: that version picked the first qualifying interface and only then filtered its addresses, so a machine whose first interface held only a link-local address reported none at all.
+Worth knowing if you are upgrading: Xamarinme.WebHostPatch 1.0.0 pins ASP.NET Core 2.2.0, which carries a critical advisory in Microsoft.AspNetCore.Server.Kestrel.Core (GHSA-5rrx-jjjq-q2r5) and a moderate one in Microsoft.AspNetCore.Server.IIS (GHSA-prrf-397v-83xh). Its forked Primitives also shadows the real assembly for anything sharing an output directory.</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>

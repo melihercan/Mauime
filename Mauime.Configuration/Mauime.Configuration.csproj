@@ -7,7 +7,16 @@
     <AssemblyName>Mauime.Configuration</AssemblyName>
     <RootNamespace>Mauime.Configuration</RootNamespace>
     <PackageId>Mauime.Configuration</PackageId>
-    <Description>appsettings.json configuration for .NET MAUI apps, from app package assets or embedded resources.</Description>
+    <Version>26.09.08</Version>
+    <Product>Mauime.Configuration</Product>
+    <Description>appsettings.json configuration for .NET MAUI apps, from the app package as a MauiAsset or from an assembly's embedded resources, with the usual appsettings.{environment}.json overlay.
+MAUI references Microsoft.Extensions.Configuration but not the JSON provider, so builder.Configuration has no AddJsonStream. That is what this supplies.</Description>
+    <PackageTags>maui configuration appsettings json mauiasset</PackageTags>
+    <PackageReleaseNotes>First release. Replaces Xamarinme.Configuration 1.0.2, which was for Xamarin.
+AddAppPackageJson reads a MauiAsset; AddEmbeddedResourceJson reads an embedded resource, which is the path Xamarinme offered and still works. Both layer appsettings.{environment}.json over the base file, and both name the file and where they looked when a required one is missing.
+Parsing is Microsoft.Extensions.Configuration.Json's. Xamarinme vendored a copy of Microsoft's Newtonsoft-era parser and froze it there, with a Newtonsoft.Json dependency attached. Nothing is vendored here.
+One behavioural difference from Xamarinme.Configuration: a JSON null used to read as an empty string, so the key existed; it is now absent, and binding falls back to the default. Booleans still render "True" - both parsers do that, so a string comparison against "true" was always wrong.
+The options object is gone, and with it the three ways it could be left half-filled and produce a NullReferenceException out of Build, or, for a wrong prefix, an empty configuration and no error at all.</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
