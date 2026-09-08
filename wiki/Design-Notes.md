@@ -22,8 +22,9 @@ It reads **metadata only**, through `MetadataLoadContext` over the built assembl
 referencing the projects. In Blazorme that was because two libraries targeted `net5.0`. Here it is
 forward-looking: the ported libraries will target **MAUI platform frameworks** — `net10.0-android`,
 `net10.0-ios`, `net10.0-maccatalyst`, `net10.0-windows10.0.19041.0` — and a plain `net10.0` test
-project cannot reference any of them. Establishing the machinery in Phase 0, while the legacy
-libraries are still plain `netstandard2.0` and easy, means the baseline survives the port.
+project cannot reference any of them. The machinery was established in Phase 0, while the imported
+Xamarin libraries were still plain `netstandard2.0` and easy, so that the baseline would survive the
+port. It did.
 
 When a change is intentional, review the diff and copy `PublicApi.received.txt` from the test output
 directory over `PublicApi.approved.txt`, in the same commit. Never weaken the assertion.
@@ -51,21 +52,21 @@ That this works is verified rather than assumed: a temporary type exposing
 `Windows.Devices.SmartCards.SmartCardReader` rendered correctly in each slice, from a `net10.0` test
 project that can reference none of them.
 
-### `SimpleNameResolver`, and why `PathAssemblyResolver` could not be used
+### `SimpleNameResolver`, and why `PathAssemblyResolver` is not used
 
-`PathAssemblyResolver` matches on version as well as simple name, and here there is no version to
-match. `legacy/WebHostPatch` drops a **fork of `Microsoft.Extensions.Primitives` stamped 5.9.0.0**
-into every output directory that references it, shadowing the real 5.0.0 that `Xamarinme.Hosting` was
-compiled against. The exact version the metadata asks for is nowhere on disk, so the baseline threw
-`FileNotFoundException` until the resolver was replaced with one that matches on simple name alone.
+`PathAssemblyResolver` matches on version as well as simple name, which is more precision than a
+metadata dump needs and more than the toolchain reliably offers — a reference assembly and the
+runtime assembly it stands in for need not agree on version, and rendering a type name does not
+depend on telling them apart.
 
-For a legacy assembly the runtime directory is probed first, so framework assemblies resolve to the
-real ones. A Mauime slice does not mix the host runtime in at all: it resolves only against its own
-`Mauime.ReferencePaths.txt`, so an Android slice takes `System.Runtime` from the Android ref pack
-rather than from whatever runtime the tests happen to be running on.
+It was originally replaced for a blunter reason: `legacy/WebHostPatch` dropped a fork of
+`Microsoft.Extensions.Primitives` stamped 5.9.0.0 into every output directory that referenced it,
+shadowing the real assembly, so the version the metadata asked for was nowhere on disk and the
+baseline threw `FileNotFoundException`. That fork is gone; the resolver stays on its own merits.
 
-That shadowing is not a curiosity: the test project itself runs on the fork, which is asserted in
-`DEFECT_WebHostPatch_ships_a_fork_of_Microsoft_Extensions_Primitives_that_shadows_the_real_one`.
+A slice resolves only against its own `Mauime.ReferencePaths.txt`, with nothing from the host
+runtime mixed in, so an Android slice takes `System.Runtime` from the Android ref pack rather than
+from whatever runtime the tests happen to be running on.
 
 ## The shape of a Mauime library
 
@@ -82,16 +83,15 @@ All four are the same shape, and the shape was settled by building rather than b
 - **`AndroidGenerateResourceDesigner=false`.** Android otherwise generates a public `Resource` class
   into every library, resources or not, and it lands in the package's public surface.
 
-The target framework list lives once, as `$(MauimeTargetFrameworks)` in `Directory.Build.props`.
-`legacy/` is shielded from all of it by its own empty `Directory.Build.props` and
-`Directory.Build.targets`: the imported sources must keep building exactly as they did, and enabling
-`Nullable` across them would bury the four advisory warnings that matter under dozens that do not.
+The target framework list lives once, as `$(MauimeTargetFrameworks)` in `Directory.Build.props`,
+which also turns on documentation generation for the four `Mauime.*` projects — so CS1591 requires
+every public member to be documented.
 
 ## What each library is, and what MAUI already does
 
 The first question, per library, was whether it should exist at all. Verified rather than assumed —
-a `net10.0-android` probe project was built to check the MAUI API, and the legacy projects were built
-to check what still compiles.
+a `net10.0-android` probe project was built to check the MAUI API, and the imported Xamarin projects
+were built to check what still compiled.
 
 ### `Xamarinme.Hosting` → `Mauime.Hosting`, ported and much smaller
 
@@ -218,8 +218,8 @@ on.
   FileSystem` in `namespace Xamarin.Essentials`, hijacking a Microsoft type name, and calls
   `Assembly.GetExecutingAssembly()`, which returns the *library's* assembly and so can never find the
   caller's embedded resource. `FileSystem.OpenAppPackageFileAsync` replaces it. Never imported.
-- **`Microsoft.Extensions.Primitives.Patch`** — imported only because `legacy/WebHostPatch` will not
-  build without it. It goes when `legacy/` goes.
+- **`Microsoft.Extensions.Primitives.Patch`** — imported only because `legacy/WebHostPatch` would not
+  build without it, and deleted with `legacy/` in Phase 4.
 
 ## Environment facts worth not rediscovering
 

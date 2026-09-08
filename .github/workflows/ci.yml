@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build and test
+    # windows-latest, not ubuntu-latest, because it is the only runner that builds every slice the
+    # libraries ship. Directory.Build.props drops net10.0-ios and net10.0-maccatalyst on Linux and
+    # net10.0-windows10.0.19041.0 everywhere but Windows, so a Linux job would build two target
+    # frameworks per library instead of five and MultiTargetingTests would dutifully pass while
+    # covering less than half of what is published.
+    #
+    # The iOS and Mac Catalyst *library* slices compile fine here; only building and signing an app
+    # for them needs a Mac. A macOS job becomes necessary when the demo app lands, not before.
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+
+      # Reads the solution and installs exactly the workloads its target frameworks need, rather
+      # than a hardcoded list that would drift from Directory.Build.props.
+      - name: Install MAUI workloads
+        run: dotnet workload restore Mauime.slnx
+
+      - name: Restore
+        run: dotnet restore Mauime.slnx
+
+      # The repository builds clean, so any warning is a regression. -warnaserror also turns a new
+      # NuGet advisory (NU1902/NU1904) into a failure, which is the point: this bar could not be set
+      # while legacy/ was here, because Xamarinme.WebHostPatch's ASP.NET Core 2.2.0 pins carry two.
+      - name: Build
+        run: dotnet build Mauime.slnx --configuration Release --no-restore -warnaserror
+
+      # The build above is not just a prerequisite for the tests: PublicApiSurfaceTests and
+      # MultiTargetingTests read the libraries' compiled assemblies off disk through
+      # MetadataLoadContext rather than referencing them, so every slice must have been built in
+      # this configuration before the tests run.
+      #
+      # Runs on Microsoft.Testing.Platform via the test.runner setting in global.json.
+      # Do not add --nologo or other VSTest-era flags: MTP forwards unrecognised arguments to the
+      # test executable, which exits 5 with "Zero tests ran".
+      - name: Test
+        run: dotnet test --configuration Release

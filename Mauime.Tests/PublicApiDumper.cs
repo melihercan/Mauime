@@ -8,7 +8,7 @@ namespace Mauime.Tests;
 /// Renders the public surface of an assembly as deterministic text.
 ///
 /// Reads metadata only, via <see cref="MetadataLoadContext"/>, so it works on assemblies this test
-/// project cannot reference. That is the whole point here: the ported libraries will target MAUI
+/// project cannot reference. That is the whole point here: the libraries target MAUI
 /// platform frameworks (net10.0-android and friends), which a net10.0 test project cannot
 /// reference at all.
 /// </summary>
@@ -162,10 +162,10 @@ internal static class PublicApiDumper
 /// <summary>
 /// Resolves dependencies by simple name only, ignoring the requested version.
 ///
-/// <see cref="PathAssemblyResolver"/> matches on version too, and here it cannot: legacy/WebHostPatch
-/// drops a fork of <c>Microsoft.Extensions.Primitives</c> stamped 5.9.0.0 into the output directory,
-/// which shadows the real 5.0.0 that Xamarinme.Hosting was compiled against, so the exact version is
-/// nowhere on disk. Rendering type names does not depend on getting the version right.
+/// <see cref="PathAssemblyResolver"/> matches on version too, which is more precision than a
+/// metadata dump needs and more than the MAUI workloads reliably offer: a reference assembly and the
+/// runtime assembly it stands in for do not always agree, and rendering a type name does not depend
+/// on telling them apart.
 ///
 /// First path wins per name. <see cref="TestAssemblies.ProbingFiles"/> supplies exactly what the
 /// compiler was handed for that one slice, so there is no second candidate to get wrong.

@@ -291,6 +291,49 @@ it.
 reversing the configuration overlay order failed 1, ignoring the requested environment name failed
 7, and reporting the configured port instead of the bound one failed 4.
 
+## Phase 4 — legacy retired, CI added
+
+`legacy/` and `Legacy.Tests` are deleted. Everything they characterized has been ported, and the
+only thing they were still doing was holding the build hostage: `Xamarinme.WebHostPatch`'s ASP.NET
+Core 2.2.0 pins carry a critical and a moderate advisory, and `-warnaserror` turns those into
+errors.
+
+The build is now **clean with `-warnaserror` in Debug and Release**, and CI enforces it.
+
+The API baseline lost its three `Xamarinme.*` assemblies. That is the second deliberate baseline
+change of the modernization, and the diff was reviewed to confirm it removed exactly those and
+touched nothing under `Mauime.*`.
+
+Two pieces of machinery got simpler with the fork gone:
+
+- `TestAssemblies` no longer carries a legacy assembly list, a project-folder map or a separate
+  framework-agnostic lookup. One path finds any assembly.
+- `SimpleNameResolver` stays, but not for the reason it was written. It replaced
+  `PathAssemblyResolver` because the forked `Microsoft.Extensions.Primitives` made the requested
+  version unfindable; it earns its place now because a reference assembly and the runtime assembly
+  it stands in for need not agree on version, and a metadata dump does not care either way.
+
+### The workflow
+
+One job on **`windows-latest`**, deliberately, not `ubuntu-latest`. `Directory.Build.props` drops
+`net10.0-ios` and `net10.0-maccatalyst` on Linux and `net10.0-windows10.0.19041.0` everywhere but
+Windows, so a Linux job would build two slices per library instead of five — and
+`MultiTargetingTests` would pass while covering less than half of what ships. The iOS and Mac
+Catalyst *library* slices compile on Windows; only building and signing an app for them needs a Mac,
+so a macOS job becomes necessary when the demo app lands, not before.
+
+`dotnet workload restore Mauime.slnx` installs what the solution's target frameworks need rather
+than a hardcoded list that would drift from `Directory.Build.props`. That it accepts a `.slnx` at
+all was checked rather than assumed.
+
+**The workflow itself is unverified until it runs on a runner** — there is no way to execute
+GitHub Actions from here, and saying otherwise would be exactly the kind of proxy this repository
+keeps refusing. What *was* verified is its command sequence, run locally in order on a Windows
+machine, which is the same platform the job uses.
+
+Publishing is not set up yet: it needs the package versions and metadata that have not been written,
+and a NuGet Trusted Publishing policy scoped to `Mauime.*` and bound to this repository.
+
 ## Decisions taken before Phase 0
 
 - **Fresh git history.** Mauime does not carry Xamarinme's 153 commits.

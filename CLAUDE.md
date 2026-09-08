@@ -10,24 +10,18 @@ this is a port, not a framework bump: new repository, fresh git history, **new p
 (`Mauime.*`), and a per-library question of whether the library should exist at all.
 
 **Nothing is published yet.** The work is phased, one commit per phase on `master`, and each phase
-needs a go-ahead. Phases 0 (characterization), 1 (the MAUI skeleton), 2 (`Mauime.Nfc`) and 3 (the
-other three libraries) are done. **All four libraries are ported.** What remains is the demo app,
-package metadata, and CI plus publishing — and `-warnaserror` cannot be turned on until `legacy/` is
-deleted.
+needs a go-ahead. Phases 0 (characterization), 1 (the MAUI skeleton), 2 (`Mauime.Nfc`), 3 (the other
+three libraries) and 4 (retiring `legacy/`, adding CI) are done. **All four libraries are ported and
+the build is clean under `-warnaserror`.** What remains is the demo app, package metadata, and
+publishing.
 
 ## Repository layout
 
 - `Mauime.Nfc/`, `Mauime.Configuration/`, `Mauime.Hosting/`, `Mauime.WebHostPatch/` — the libraries,
   each multi-targeting `net10.0`, `net10.0-android`, `net10.0-ios`, `net10.0-maccatalyst` and
   `net10.0-windows10.0.19041.0`.
-- `legacy/` — the Xamarin sources, imported verbatim so Phase 0 could pin real behaviour and every
-  later deletion shows up as a diff. Transformed away as the port proceeds.
-- `Mauime.Tests/` — xUnit v3, the Mauime libraries and the API baseline.
-- `Legacy.Tests/` — characterization of `legacy/`. **Separate on purpose**: `legacy/WebHostPatch`'s
-  forked `Microsoft.Extensions.Primitives`, stamped 5.9.0.0, occupies that filename in whatever
-  output directory it reaches, so anything wanting the real 10.0.0 gets `FileNotFoundException`.
-  Referencing `Mauime.Nfc` from the old single project broke thirty unrelated tests exactly that
-  way. Do not merge them back; this project dies with `legacy/`.
+- `Mauime.Tests/` — xUnit v3, one project for everything.
+- `.github/workflows/ci.yml` — build and test, with `-warnaserror`.
 - `wiki/` — [Home](wiki/Home.md), [Building and Testing](wiki/Building-and-Testing.md),
   [Design Notes](wiki/Design-Notes.md), [Modernization Log](wiki/Modernization-Log.md).
 
@@ -48,9 +42,8 @@ without the same kind of evidence:
   public `Resource` class into every library, resources or not, and it lands in the public surface.
 - The framework list lives once, as `$(MauimeTargetFrameworks)` in `Directory.Build.props`.
 
-`legacy/` has its **own empty** `Directory.Build.props` and `Directory.Build.targets`. Discovery
-stops at the first file found walking up, so the imported sources keep building exactly as they did.
-Those shields are the only files added under `legacy/`; nothing imported has been edited.
+`Directory.Build.targets` writes `Mauime.ReferencePaths.txt` beside every assembly, which the API
+baseline depends on.
 
 ## Commands
 
@@ -71,23 +64,29 @@ but is a bad command line. Target one project with `--project <path>`, not a bar
 **Build the solution before running the tests.** `PublicApiSurfaceTests` and `MultiTargetingTests`
 read compiled assemblies off disk through `MetadataLoadContext` rather than referencing them.
 
-## The build is not warning-free yet, and that is deliberate
+## Zero warnings, enforced
 
-`legacy/WebHostPatch` pins ASP.NET Core 2.2.0, which reports **NU1904 (critical)** for
-`Microsoft.AspNetCore.Server.Kestrel.Core` and **NU1902 (moderate)** for
-`Microsoft.AspNetCore.Server.IIS`. Four warnings.
+The build is clean with **`-warnaserror`** in Debug and Release, and `ci.yml` builds that way. That
+also makes a new NuGet advisory (NU1902/NU1904) a build failure, which is the point. Never reach for
+`NoWarn`.
 
-**`-warnaserror` cannot be turned on until `legacy/` is gone**, which is why there is no CI workflow
-yet. Do not silence these with `NoWarn` — `Xamarinme.WebHostPatch` 1.0.0 is on nuget.org with 30,366
-downloads and every consumer inherits both advisories, which is a live question, not noise.
-Everything else builds clean; keep it that way.
+This bar was unreachable until Phase 4: `legacy/WebHostPatch` pinned ASP.NET Core 2.2.0, which
+carries two advisories, and deleting `legacy/` is what made it possible.
 
-## legacy/Nfc is not in the solution
+## CI
 
-It cannot be built on this toolchain: `MSBuild.Sdk.Extras/3.0.23` needs desktop `msbuild.exe` for
-`MonoAndroid10.0; Xamarin.iOS10; uap10.0.19041; Xamarin.Mac20`, and the `netstandard2.0` slice fails
-on its own terms (`CrossNfc.cs(30,24): error CS0246`). Adding it to the solution breaks the build. It
-therefore has **no runtime coverage** in Phase 0; its two defects are pinned as source assertions.
+One job on **`windows-latest`**, and it must stay there. `Directory.Build.props` drops
+`net10.0-ios`/`net10.0-maccatalyst` on Linux and `net10.0-windows10.0.19041.0` off Windows, so a
+Linux runner would build two slices per library instead of five and `MultiTargetingTests` would pass
+while covering less than half of what ships. A macOS job becomes necessary when the demo app needs
+iOS/Mac Catalyst *app* builds — library slices compile on Windows.
+
+`dotnet workload restore Mauime.slnx` reads the solution rather than hardcoding a workload list that
+would drift from `Directory.Build.props`.
+
+**Publishing is not set up.** It needs package versions and metadata, plus a NuGet Trusted
+Publishing policy scoped to `Mauime.*` and bound to this repository — one policy per workflow file,
+so keep publishing in a single `publish.yml`.
 
 ## Mauime.Nfc
 
@@ -166,11 +165,10 @@ Two things make reading a platform slice work, both added in Phase 1:
   `Microsoft.iOS` and the rest are nowhere near `bin/`. `MultiTargetingTests` asserts the file
   exists for every slice, because while the libraries are empty nothing else would notice its loss.
 
-**`SimpleNameResolver`, not `PathAssemblyResolver`**: `legacy/WebHostPatch` drops a fork of
-`Microsoft.Extensions.Primitives` stamped 5.9.0.0 into every referencing output directory, shadowing
-the real 5.0.0, so the exact version the metadata asks for is nowhere on disk. Matching on simple
-name alone is the fix. For a legacy assembly the runtime directory is probed first; a Mauime slice
-resolves only against its own reference paths, so its world stays self-consistent.
+**`SimpleNameResolver`, not `PathAssemblyResolver`**: matching on version is more precision than a
+metadata dump needs, and more than the workloads reliably offer — a reference assembly and the
+runtime assembly it stands in for need not agree. Each slice resolves only against its own reference
+paths, so its world stays self-consistent.
 
 ## The defect-test convention
 
@@ -184,11 +182,9 @@ resolves only against its own reference paths, so its world stays self-consisten
 A red test elsewhere means behaviour changed; acceptable only if intended, in which case update the
 test in the same commit.
 
-Six pins assert against files under `legacy/` through the `LegacySource` helper instead of running
-code. Two are about csproj declarations, which is where those defects live. The other four cannot be
-reached: the `CancelKeyPress` throw is Mono-specific, exercising `OnProcessExit` would hang the run
-on an unbounded `WaitOne()`, and `legacy/Nfc` does not compile. They are still real tests —
-uncommenting the `CancelKeyPress` subscription turns one red, which was checked.
+Some pins read source text under `Mauime.Nfc/Platforms/` instead of running code, because a net10.0
+test project cannot reference the Android or iOS slices. That is a labelled second choice, not the
+default.
 
 ## Test stack
 
@@ -222,7 +218,7 @@ temporary type exposing `Android.Nfc.NfcAdapter`, `CoreNFC.NFCNdefReaderSession`
 - Phase 0 is characterization first, pinning current behaviour including defects. Then one phase per
   go-ahead. Do not run ahead.
 - When a fix makes a defect test fail, **rewrite** that test rather than delete it.
-- Zero build warnings is the bar, enforced by CI with `-warnaserror` once `legacy/` is gone.
+- Zero build warnings is the bar, enforced by CI with `-warnaserror`.
 - Commit to `master` directly, no branches. **Commit and push only when asked.**
 - **Never add or upgrade NuGet packages without asking.**
 - Verify with the real thing, not a proxy. A test that has never been seen to fail is not a proven

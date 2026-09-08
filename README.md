@@ -3,8 +3,8 @@
 Libraries and plugins for .NET MAUI applications, ported from
 [Xamarinme](https://github.com/melihercan/Xamarinme) now that Xamarin is retired.
 
-**This repository is mid-port and ships nothing yet.** The Xamarin sources live under `legacy/` and
-are being replaced library by library. Nothing under `Mauime.*` has been published to nuget.org.
+**All four libraries are ported; nothing is published yet.** What remains is a demo app, package
+metadata and publishing.
 
 ## Planned packages
 
