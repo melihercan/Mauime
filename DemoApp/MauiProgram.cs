@@ -85,6 +85,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<WebHostViewModel>();
         builder.Services.AddSingleton<MainViewModel>();
         builder.Services.AddSingleton<MainPage>();
+        builder.Services.AddSingleton<AppShell>();
 
 #if DEBUG
         builder.Logging.AddDebug();

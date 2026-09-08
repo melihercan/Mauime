@@ -37,6 +37,17 @@ public sealed class Service(IHostEnvironment environment)
 }
 ```
 
+## What comes from the platform
+
+Only the environment name is Mauime's. `ApplicationName`, `ContentRootPath` and
+`ContentRootFileProvider` are delegated to MAUI's own host environment, unchanged — including their
+failure modes.
+
+**`ContentRootPath` throws `NotImplementedException` on Android**, and this package passes that
+through rather than inventing a value. Verified on a device. If you need a writable path, use
+`FileSystem.AppDataDirectory`; if you need one for an ASP.NET Core content root,
+`AppContext.BaseDirectory` is what `Mauime.WebHostPatch` defaults to.
+
 ## Why this is so small
 
 `Xamarinme.Hosting` existed because Xamarin had no hosting at all. It built a parallel

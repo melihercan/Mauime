@@ -34,7 +34,19 @@ public sealed partial class MainPage(IMauimeWebHost host) : ContentPage
 `Address` is read from the server after it binds, so it carries the real port even when `Port` was
 left at 0. When listening on every interface — the default — the reported host is the machine's LAN
 address rather than `0.0.0.0`, so it is something you can type into another device.
-`NetworkAddress.GetLocalAddress()` exposes that lookup directly.
+`NetworkAddress.GetLocalAddress()` exposes that lookup directly, and returns `null` when the machine
+has no routable address, in which case `Address` keeps whatever the server bound to.
+
+That lookup does not filter on `NetworkInterfaceType`, and the reason is worth knowing if you write
+your own: .NET classifies an interface on Linux by reading `/sys/class/net/<name>/type`, and
+Android's SELinux policy denies that file — to an app, and even to the more privileged `shell` user.
+A working Wi-Fi interface therefore reports `Unknown`, so the obvious `Ethernet or Wireless80211`
+test rejects it and the app reports `0.0.0.0` — under a label telling the user to open it from
+another device. Verified on an Android 14 device, which reported `wlan0|Unknown|Up|[192.168.1.16]`.
+
+Loopback is excluded by address rather than by interface type. That same device does classify `lo`
+correctly, so the type would have served — but the point of the change is that classification cannot
+be relied on, and an address check does not depend on it.
 
 `StopAsync` shuts the server down gracefully and frees the port; the host can be started again
 afterwards. Disposing it stops it.

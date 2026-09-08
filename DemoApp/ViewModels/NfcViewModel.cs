@@ -83,8 +83,15 @@ public sealed class NfcViewModel : ReactiveObject, IDisposable
     public string? TagId
     {
         get => _tagId;
-        private set => this.RaiseAndSetIfChanged(ref _tagId, value);
+        private set
+        {
+            this.RaiseAndSetIfChanged(ref _tagId, value);
+            this.RaisePropertyChanged(nameof(HasTag));
+        }
     }
+
+    /// <summary>Whether a tag has been read, so the view can hide an empty row rather than show "Tag".</summary>
+    public bool HasTag => !string.IsNullOrEmpty(_tagId);
 
     public bool IsSessionEnabled
     {

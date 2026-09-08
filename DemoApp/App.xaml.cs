@@ -11,5 +11,5 @@ public partial class App : Application
     }
 
     protected override Window CreateWindow(IActivationState? activationState) =>
-        new(_services.GetRequiredService<MainPage>()) { Title = "Mauime Demo" };
+        new(_services.GetRequiredService<AppShell>()) { Title = "Mauime Demo" };
 }

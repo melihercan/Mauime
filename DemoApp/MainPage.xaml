@@ -8,117 +8,244 @@
     xmlns:tabView="clr-namespace:Syncfusion.Maui.Toolkit.TabView;assembly=Syncfusion.Maui.Toolkit"
     xmlns:vm="clr-namespace:DemoApp.ViewModels"
     x:DataType="vm:MainViewModel"
-    Title="Mauime Demo">
+    Shell.NavBarIsVisible="False">
 
-    <tabView:SfTabView TabWidthMode="SizeToContent">
-        <tabView:SfTabView.Items>
+    <ContentPage.Resources>
+        <ResourceDictionary>
 
-            <!-- Mauime.Configuration -->
-            <tabView:SfTabItem Header="Configuration">
-                <tabView:SfTabItem.Content>
-                    <Grid BindingContext="{Binding Configuration}" RowDefinitions="Auto,*">
-                        <Label
-                            Margin="16,16,16,8"
-                            Text="Every key the configuration ended up with. Demo:Source shows the environment overlay having been applied on top of the base file."
-                            LineBreakMode="WordWrap" />
+            <!--
+                Cards are Border, not Syncfusion's SfCardView. SfCardView takes the WinUI head down
+                at startup with "COMException: No installed components were detected" — established
+                by swapping it out and watching the app start. Border renders the same card and
+                works everywhere. SfTabView, SfButton and SfChip are all fine.
+            -->
+            <Style x:Key="Card" TargetType="Border">
+                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light=#FFFFFF, Dark=#1E1E26}" />
+                <Setter Property="Stroke" Value="{AppThemeBinding Light=#E4E4EC, Dark=#34343F}" />
+                <Setter Property="StrokeThickness" Value="1" />
+                <Setter Property="Padding" Value="14,12" />
+                <Setter Property="StrokeShape">
+                    <Setter.Value>
+                        <RoundRectangle CornerRadius="10" />
+                    </Setter.Value>
+                </Setter>
+            </Style>
 
-                        <CollectionView Grid.Row="1" ItemsSource="{Binding Settings}">
-                            <CollectionView.ItemTemplate>
-                                <DataTemplate x:DataType="vm:SettingRow">
-                                    <VerticalStackLayout Padding="16,6">
-                                        <Label FontAttributes="Bold" Text="{Binding Key}" />
-                                        <Label Text="{Binding Value}" />
+            <Style x:Key="Caption" TargetType="Label">
+                <Setter Property="FontSize" Value="11" />
+                <Setter Property="FontAttributes" Value="Bold" />
+                <Setter Property="CharacterSpacing" Value="0.8" />
+                <Setter Property="TextColor" Value="{AppThemeBinding Light=#6C6C7A, Dark=#9C9CAC}" />
+            </Style>
+
+            <Style x:Key="Value" TargetType="Label">
+                <Setter Property="FontSize" Value="15" />
+                <Setter Property="LineBreakMode" Value="WordWrap" />
+            </Style>
+
+            <Style x:Key="Blurb" TargetType="Label">
+                <Setter Property="FontSize" Value="13" />
+                <Setter Property="LineBreakMode" Value="WordWrap" />
+                <Setter Property="TextColor" Value="{AppThemeBinding Light=#6C6C7A, Dark=#9C9CAC}" />
+            </Style>
+
+            <Style TargetType="buttons:SfButton">
+                <Setter Property="CornerRadius" Value="8" />
+                <Setter Property="HeightRequest" Value="44" />
+                <Setter Property="Padding" Value="18,0" />
+            </Style>
+
+        </ResourceDictionary>
+    </ContentPage.Resources>
+
+    <Grid RowDefinitions="Auto,*">
+
+        <!-- A header, because the Xamarin demo had one and it made the app feel like something. -->
+        <Border
+            Padding="16,14"
+            BackgroundColor="{AppThemeBinding Light=#512BD4, Dark=#2B1B60}"
+            StrokeThickness="0">
+            <HorizontalStackLayout Spacing="12" VerticalOptions="Center">
+                <Border
+                    HeightRequest="42"
+                    StrokeThickness="0"
+                    WidthRequest="42">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="21" />
+                    </Border.StrokeShape>
+                    <Image
+                        Aspect="AspectFill"
+                        HeightRequest="42"
+                        Source="me.png"
+                        WidthRequest="42" />
+                </Border>
+                <VerticalStackLayout VerticalOptions="Center">
+                    <Label
+                        FontAttributes="Bold"
+                        FontSize="20"
+                        Text="Mauime Demo"
+                        TextColor="White" />
+                    <Label
+                        FontSize="12"
+                        Text="Four libraries for .NET MAUI"
+                        TextColor="#D6CCFF" />
+                </VerticalStackLayout>
+            </HorizontalStackLayout>
+        </Border>
+
+        <tabView:SfTabView Grid.Row="1" TabWidthMode="Default">
+            <tabView:SfTabView.Items>
+
+                <!-- Mauime.Configuration -->
+                <tabView:SfTabItem Header="Config">
+                    <tabView:SfTabItem.Content>
+                        <Grid BindingContext="{Binding Configuration}" RowDefinitions="Auto,*">
+                            <Label
+                                Margin="16,14,16,10"
+                                Style="{StaticResource Blurb}"
+                                Text="Every key the configuration ended up with. Demo:Source shows the environment overlay applied over the base file." />
+
+                            <CollectionView Grid.Row="1" ItemsSource="{Binding Settings}">
+                                <CollectionView.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:SettingRow">
+                                        <Border Margin="16,0,16,10" Style="{StaticResource Card}">
+                                            <VerticalStackLayout Spacing="3">
+                                                <Label Style="{StaticResource Caption}" Text="{Binding Key}" />
+                                                <Label Style="{StaticResource Value}" Text="{Binding Value}" />
+                                            </VerticalStackLayout>
+                                        </Border>
+                                    </DataTemplate>
+                                </CollectionView.ItemTemplate>
+                            </CollectionView>
+                        </Grid>
+                    </tabView:SfTabItem.Content>
+                </tabView:SfTabItem>
+
+                <!-- Mauime.Hosting -->
+                <tabView:SfTabItem Header="Hosting">
+                    <tabView:SfTabItem.Content>
+                        <ScrollView BindingContext="{Binding Hosting}">
+                            <VerticalStackLayout Padding="16,14" Spacing="10">
+
+                                <Label
+                                    Style="{StaticResource Blurb}"
+                                    Text="Without Mauime.Hosting this reports Production on every platform, always." />
+
+                                <Border Style="{StaticResource Card}">
+                                    <VerticalStackLayout Spacing="8">
+                                        <Label Style="{StaticResource Caption}" Text="ENVIRONMENT" />
+                                        <!-- Wrapped, because SfChip stretches to fill a
+                                             VerticalStackLayout even with HorizontalOptions=Start. -->
+                                        <HorizontalStackLayout>
+                                            <chips:SfChip Text="{Binding EnvironmentName}" />
+                                        </HorizontalStackLayout>
+                                        <Label
+                                            Style="{StaticResource Value}"
+                                            Text="{Binding IsDevelopment, StringFormat='IsDevelopment() → {0}'}" />
                                     </VerticalStackLayout>
-                                </DataTemplate>
-                            </CollectionView.ItemTemplate>
-                        </CollectionView>
-                    </Grid>
-                </tabView:SfTabItem.Content>
-            </tabView:SfTabItem>
+                                </Border>
 
-            <!-- Mauime.Hosting -->
-            <tabView:SfTabItem Header="Hosting">
-                <tabView:SfTabItem.Content>
-                    <ScrollView BindingContext="{Binding Hosting}">
-                        <VerticalStackLayout Padding="16" Spacing="12">
-                            <Label
-                                Text="Without Mauime.Hosting this would say Production on every platform, always."
-                                LineBreakMode="WordWrap" />
+                                <Border Style="{StaticResource Card}">
+                                    <VerticalStackLayout Spacing="6">
+                                        <Label Style="{StaticResource Caption}" Text="FROM CONFIGURATION" />
+                                        <Label Style="{StaticResource Value}" Text="{Binding Greeting}" />
+                                        <Label Style="{StaticResource Value}" Text="{Binding Source}" />
+                                    </VerticalStackLayout>
+                                </Border>
 
-                            <chips:SfChip Text="{Binding EnvironmentName}" HorizontalOptions="Start" />
+                                <Border Style="{StaticResource Card}">
+                                    <VerticalStackLayout Spacing="6">
+                                        <Label Style="{StaticResource Caption}" Text="STILL FROM THE PLATFORM" />
+                                        <Label
+                                            Style="{StaticResource Blurb}"
+                                            Text="ContentRootPath is not implemented on Android — the wrapper passes the platform's failure through rather than inventing a value." />
+                                        <Label Style="{StaticResource Value}" Text="{Binding ApplicationName}" />
+                                        <Label Style="{StaticResource Value}" Text="{Binding ContentRootPath}" />
+                                    </VerticalStackLayout>
+                                </Border>
 
-                            <Label Text="{Binding IsDevelopment, StringFormat='IsDevelopment(): {0}'}" />
-                            <Label Text="{Binding Greeting, StringFormat='Demo:Greeting = {0}'}" />
-                            <Label Text="{Binding Source, StringFormat='Demo:Source = {0}'}" />
+                            </VerticalStackLayout>
+                        </ScrollView>
+                    </tabView:SfTabItem.Content>
+                </tabView:SfTabItem>
 
-                            <Label
-                                Margin="0,12,0,0"
-                                Text="These two still come from the platform - the wrapper only changes the name:"
-                                LineBreakMode="WordWrap" />
-                            <Label Text="{Binding ApplicationName, StringFormat='ApplicationName = {0}'}" />
-                            <Label Text="{Binding ContentRootPath, StringFormat='ContentRootPath = {0}'}" />
-                        </VerticalStackLayout>
-                    </ScrollView>
-                </tabView:SfTabItem.Content>
-            </tabView:SfTabItem>
+                <!-- Mauime.Nfc -->
+                <tabView:SfTabItem Header="NFC">
+                    <tabView:SfTabItem.Content>
+                        <Grid BindingContext="{Binding Nfc}" RowDefinitions="Auto,*">
+                            <VerticalStackLayout Padding="16,14" Spacing="12">
 
-            <!-- Mauime.Nfc -->
-            <tabView:SfTabItem Header="NFC">
-                <tabView:SfTabItem.Content>
-                    <Grid BindingContext="{Binding Nfc}" RowDefinitions="Auto,Auto,*">
-                        <VerticalStackLayout Padding="16" Spacing="12">
-                            <HorizontalStackLayout Spacing="12">
-                                <buttons:SfButton Text="Start session" Command="{Binding Start}" />
-                                <buttons:SfButton Text="Stop session" Command="{Binding Stop}" />
-                            </HorizontalStackLayout>
+                                <HorizontalStackLayout Spacing="10">
+                                    <buttons:SfButton Command="{Binding Start}" Text="Start session" />
+                                    <buttons:SfButton Command="{Binding Stop}" Text="Stop" />
+                                </HorizontalStackLayout>
 
-                            <Label Text="{Binding Status}" LineBreakMode="WordWrap" />
-                            <Label Text="{Binding TagId, StringFormat='Tag: {0}'}" />
-                        </VerticalStackLayout>
+                                <Border Style="{StaticResource Card}">
+                                    <VerticalStackLayout Spacing="6">
+                                        <Label Style="{StaticResource Caption}" Text="STATUS" />
+                                        <Label Style="{StaticResource Value}" Text="{Binding Status}" />
+                                        <Label
+                                            IsVisible="{Binding HasTag}"
+                                            Style="{StaticResource Value}"
+                                            Text="{Binding TagId, StringFormat='Tag {0}'}" />
+                                    </VerticalStackLayout>
+                                </Border>
 
-                        <Label
-                            Grid.Row="1"
-                            Margin="16,0"
-                            Text="Records"
-                            FontAttributes="Bold" />
+                                <Label Style="{StaticResource Caption}" Text="NDEF RECORDS" />
+                            </VerticalStackLayout>
 
-                        <CollectionView Grid.Row="2" ItemsSource="{Binding Records}">
-                            <CollectionView.ItemTemplate>
-                                <DataTemplate x:DataType="x:String">
-                                    <Label Padding="16,6" Text="{Binding .}" LineBreakMode="WordWrap" />
-                                </DataTemplate>
-                            </CollectionView.ItemTemplate>
-                        </CollectionView>
-                    </Grid>
-                </tabView:SfTabItem.Content>
-            </tabView:SfTabItem>
+                            <CollectionView Grid.Row="1" ItemsSource="{Binding Records}">
+                                <CollectionView.ItemTemplate>
+                                    <DataTemplate x:DataType="x:String">
+                                        <Border Margin="16,0,16,10" Style="{StaticResource Card}">
+                                            <Label Style="{StaticResource Value}" Text="{Binding .}" />
+                                        </Border>
+                                    </DataTemplate>
+                                </CollectionView.ItemTemplate>
+                            </CollectionView>
+                        </Grid>
+                    </tabView:SfTabItem.Content>
+                </tabView:SfTabItem>
 
-            <!-- Mauime.WebHostPatch -->
-            <tabView:SfTabItem Header="Web host">
-                <tabView:SfTabItem.Content>
-                    <ScrollView BindingContext="{Binding WebHost}">
-                        <VerticalStackLayout Padding="16" Spacing="12">
-                            <Label
-                                Text="Kestrel, inside this app. On .NET 10 that needs a framework reference and nothing else - no patch, no forks."
-                                LineBreakMode="WordWrap" />
+                <!-- Mauime.WebHostPatch -->
+                <tabView:SfTabItem Header="Web host">
+                    <tabView:SfTabItem.Content>
+                        <ScrollView BindingContext="{Binding WebHost}">
+                            <VerticalStackLayout Padding="16,14" Spacing="12">
 
-                            <HorizontalStackLayout Spacing="12">
-                                <buttons:SfButton Text="Start server" Command="{Binding Start}" />
-                                <buttons:SfButton Text="Stop server" Command="{Binding Stop}" />
-                            </HorizontalStackLayout>
+                                <Label
+                                    Style="{StaticResource Blurb}"
+                                    Text="Kestrel, inside this app, from netstandard2.0 packages — the only route that reaches Android and iOS." />
 
-                            <Label Text="{Binding Status}" LineBreakMode="WordWrap" />
+                                <HorizontalStackLayout Spacing="10">
+                                    <buttons:SfButton Command="{Binding Start}" Text="Start server" />
+                                    <buttons:SfButton Command="{Binding Stop}" Text="Stop" />
+                                </HorizontalStackLayout>
 
-                            <Label
-                                FontAttributes="Bold"
-                                Text="{Binding Address}"
-                                IsVisible="{Binding IsRunning}" />
-                        </VerticalStackLayout>
-                    </ScrollView>
-                </tabView:SfTabItem.Content>
-            </tabView:SfTabItem>
+                                <Border Style="{StaticResource Card}">
+                                    <VerticalStackLayout Spacing="6">
+                                        <Label Style="{StaticResource Caption}" Text="STATUS" />
+                                        <Label Style="{StaticResource Value}" Text="{Binding Status}" />
+                                    </VerticalStackLayout>
+                                </Border>
 
-        </tabView:SfTabView.Items>
-    </tabView:SfTabView>
+                                <Border IsVisible="{Binding IsRunning}" Style="{StaticResource Card}">
+                                    <VerticalStackLayout Spacing="6">
+                                        <Label Style="{StaticResource Caption}" Text="OPEN THIS FROM ANOTHER DEVICE" />
+                                        <Label
+                                            FontAttributes="Bold"
+                                            FontSize="17"
+                                            Text="{Binding Address}" />
+                                    </VerticalStackLayout>
+                                </Border>
+
+                            </VerticalStackLayout>
+                        </ScrollView>
+                    </tabView:SfTabItem.Content>
+                </tabView:SfTabItem>
+
+            </tabView:SfTabView.Items>
+        </tabView:SfTabView>
+    </Grid>
 
 </ContentPage>

@@ -26,6 +26,11 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<!-- Mauime.Nfc: iOS refuses to start a reader session without a usage description, and the
+	     app also needs the com.apple.developer.nfc.readersession.formats entitlement and a
+	     provisioning profile with the Near Field Communication Tag Reading capability. -->
+	<key>NFCReaderUsageDescription</key>
+	<string>The demo reads NDEF messages from NFC tags to show what Mauime.Nfc does.</string>
 	<key>XSAppIconAssets</key>
 	<string>Assets.xcassets/appicon.appiconset</string>
 </dict>

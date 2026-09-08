@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using FluentAssertions;
 using Mauime.WebHostPatch;
@@ -190,20 +191,130 @@ public class WebHostTests
         body.Should().Be("configured");
     }
 
+    // The tests below replace a single permissive one that asserted only "routable IPv4, or null".
+    // It passed on Android while GetLocalAddress returned null there and the demo app displayed
+    // http://0.0.0.0:5001/ under a label telling the user to open it from another device. Allowing
+    // null was meant to tolerate a build machine with no network; what it actually tolerated was the
+    // defect. These pin the selection rules instead, which needs no network at all.
+
     [Fact]
-    public void The_local_address_is_routable_IPv4_or_nothing()
+    public void An_interface_the_platform_will_not_classify_is_still_used()
     {
-        // Cannot assert that a machine has a network; it can assert that whatever comes back is
-        // usable. The Xamarinme version this replaces could return null with a working connection,
-        // because it filtered addresses only on the first qualifying interface.
+        // Android denies /sys/class/net/<name>/type, which is how .NET classifies an interface on
+        // Linux, so every interface reports Unknown - including the working Wi-Fi one. Requiring
+        // Ethernet or Wireless80211, as this once did, rejects the only interface there is.
+        var candidates = new[]
+        {
+            Candidate(NetworkInterfaceType.Unknown, "192.168.1.16"),
+        };
+
+        NetworkAddress.SelectAddress(candidates).Should().Be(IPAddress.Parse("192.168.1.16"));
+    }
+
+    [Fact]
+    public void Loopback_is_never_reported_even_when_its_interface_looks_like_any_other()
+    {
+        // The risk created by no longer filtering on interface type. Android classified lo correctly
+        // on the device this was checked against, so this case was not what broke there - but the
+        // change removes the guarantee that it would be caught by type, and an address check holds
+        // whether or not the platform will classify anything.
+        var candidates = new[]
+        {
+            Candidate(NetworkInterfaceType.Unknown, "127.0.0.1"),
+            Candidate(NetworkInterfaceType.Unknown, "192.168.1.16"),
+        };
+
+        NetworkAddress.SelectAddress(candidates).Should().Be(IPAddress.Parse("192.168.1.16"));
+    }
+
+    [Fact]
+    public void A_link_local_address_does_not_stop_a_later_interface_being_found()
+    {
+        // The Xamarinme NetworkHelper bug, kept pinned: it chose an interface first and filtered
+        // addresses second, so this returned nothing.
+        var candidates = new[]
+        {
+            Candidate(NetworkInterfaceType.Ethernet, "169.254.3.7"),
+            Candidate(NetworkInterfaceType.Wireless80211, "192.168.1.16"),
+        };
+
+        NetworkAddress.SelectAddress(candidates).Should().Be(IPAddress.Parse("192.168.1.16"));
+    }
+
+    [Fact]
+    public void A_platform_that_does_report_types_still_prefers_the_obvious_interface()
+    {
+        // Unknown is accepted, not preferred. On Windows, where the type is real, an unclassified
+        // virtual adapter must not win over the actual Wi-Fi one just by enumerating first.
+        var candidates = new[]
+        {
+            Candidate(NetworkInterfaceType.Unknown, "172.20.0.1"),
+            Candidate(NetworkInterfaceType.Wireless80211, "192.168.1.16"),
+        };
+
+        NetworkAddress.SelectAddress(candidates).Should().Be(IPAddress.Parse("192.168.1.16"));
+    }
+
+    [Fact]
+    public void An_interface_that_is_down_is_ignored()
+    {
+        var candidates = new[]
+        {
+            new InterfaceCandidate(
+                NetworkInterfaceType.Wireless80211,
+                OperationalStatus.Down,
+                [IPAddress.Parse("192.168.1.16")]),
+        };
+
+        NetworkAddress.SelectAddress(candidates).Should().BeNull();
+    }
+
+    [Fact]
+    public void Nothing_routable_reports_nothing()
+    {
+        var candidates = new[]
+        {
+            Candidate(NetworkInterfaceType.Unknown, "127.0.0.1"),
+            Candidate(NetworkInterfaceType.Ethernet, "169.254.3.7"),
+        };
+
+        NetworkAddress.SelectAddress(candidates).Should().BeNull();
+    }
+
+    [Fact]
+    public void This_machine_reports_an_address_if_it_has_one()
+    {
+        // The one test that touches the real machine. It cannot demand an address - a build agent
+        // may genuinely have no network - so it asks whether one exists by the same rules and
+        // requires the two answers to agree. That is close to restating the implementation, and it
+        // is deliberately not the test carrying the weight; it is here because it is the check that
+        // would have failed on Android, where an interface plainly held 192.168.1.16 and
+        // GetLocalAddress returned null.
+        var machineHasOne = NetworkInterface.GetAllNetworkInterfaces()
+            .Where(network => network.OperationalStatus is OperationalStatus.Up or OperationalStatus.Unknown)
+            .SelectMany(network => network.GetIPProperties().UnicastAddresses)
+            .Select(address => address.Address)
+            .Any(address => address.AddressFamily == AddressFamily.InterNetwork
+                && !IPAddress.IsLoopback(address)
+                && !address.ToString().StartsWith("169.254.", StringComparison.Ordinal));
+
         var address = NetworkAddress.GetLocalAddress();
 
-        if (address is not null)
+        if (machineHasOne)
         {
-            address.AddressFamily.Should().Be(AddressFamily.InterNetwork);
+            address.Should().NotBeNull();
+            address!.AddressFamily.Should().Be(AddressFamily.InterNetwork);
+            IPAddress.IsLoopback(address).Should().BeFalse();
             address.ToString().Should().NotStartWith("169.254.");
         }
+        else
+        {
+            address.Should().BeNull();
+        }
     }
+
+    private static InterfaceCandidate Candidate(NetworkInterfaceType type, string address) =>
+        new(type, OperationalStatus.Up, [IPAddress.Parse(address)]);
 
     private sealed record Greeting(string Text);
 }
