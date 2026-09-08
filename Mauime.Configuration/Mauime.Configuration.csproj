@@ -6,7 +6,7 @@
     <SingleProject>true</SingleProject>
     <AssemblyName>Mauime.Configuration</AssemblyName>
     <RootNamespace>Mauime.Configuration</RootNamespace>
-    <PackageId>Melihercan.Mauime.Configuration</PackageId>
+    <PackageId>Me.Toolkit.Maui.Configuration</PackageId>
     <Version>26.09.08</Version>
     <Product>Mauime.Configuration</Product>
     <Description>appsettings.json configuration for .NET MAUI apps, from the app package as a MauiAsset or from an assembly's embedded resources, with the usual appsettings.{environment}.json overlay.

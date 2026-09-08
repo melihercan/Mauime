@@ -2,7 +2,7 @@ name: Publish
 
 # One workflow for every package, because a NuGet Trusted Publishing policy is bound to a single
 # workflow file *and* a single repository. Keeping this as one file means one policy - scoped to
-# "Melihercan.Mauime.*" - covers all three packages, every future version, and any future one.
+# "Me.Toolkit.Maui.*" - covers all three packages, every future version, and any future one.
 #
 # Ways in:
 #   * tag v<version>                — publishes every package
@@ -210,7 +210,7 @@ jobs:
       # expires and each token buys exactly one key.
       #
       # Requires a Trusted Publishing policy on nuget.org naming this repository and
-      # this workflow file, scoped to Melihercan.Mauime.*. No API key secret is involved.
+      # this workflow file, scoped to Me.Toolkit.Maui.*. No API key secret is involved.
       - name: NuGet login
         if: github.event_name == 'push' || inputs.dry-run == false
         id: login

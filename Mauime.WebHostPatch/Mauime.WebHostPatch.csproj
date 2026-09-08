@@ -6,7 +6,7 @@
     <SingleProject>true</SingleProject>
     <AssemblyName>Mauime.WebHostPatch</AssemblyName>
     <RootNamespace>Mauime.WebHostPatch</RootNamespace>
-    <PackageId>Melihercan.Mauime.WebHostPatch</PackageId>
+    <PackageId>Me.Toolkit.Maui.WebHostPatch</PackageId>
     <Version>26.09.08</Version>
     <Product>Mauime.WebHostPatch</Product>
     <Description>Run an ASP.NET Core web host and Kestrel server inside a .NET MAUI app: start it, stop it, and find out what address to show the user.

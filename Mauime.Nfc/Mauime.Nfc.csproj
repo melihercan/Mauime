@@ -6,7 +6,7 @@
     <SingleProject>true</SingleProject>
     <AssemblyName>Mauime.Nfc</AssemblyName>
     <RootNamespace>Mauime.Nfc</RootNamespace>
-    <PackageId>Melihercan.Mauime.Nfc</PackageId>
+    <PackageId>Me.Toolkit.Maui.Nfc</PackageId>
 
     <!--
       Not published. The library builds, ships in the demo and is covered by tests, but the reading
