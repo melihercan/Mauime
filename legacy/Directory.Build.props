@@ -7,7 +7,10 @@
     Nullable across it, for instance, would bury the four advisory warnings that matter under
     dozens that do not.
 
-    This is the only file added under legacy/. Nothing imported has been edited.
+    There is deliberately no matching Directory.Build.targets. The root one only writes a
+    Mauime.ReferencePaths.txt beside each assembly, which changes nothing about how the code
+    compiles and is what lets the API baseline resolve the legacy assemblies' 2.2.0-era
+    dependencies. This file is the only one added under legacy/; nothing imported has been edited.
   -->
 
 </Project>

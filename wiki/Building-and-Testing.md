@@ -30,7 +30,7 @@ for them needs a Mac. CI on Linux will produce two slices per library, not five,
 `net10.0` is deliberately in the list. It is the slice a non-platform project gets — verified by
 referencing `Mauime.Nfc` from the `net10.0` test project, which resolves the `net10.0` assembly byte
 for byte and never the Android one — and for `Mauime.Nfc` it is where "this platform has no
-implementation" will live. `Xamarinme.Nfc` used `netstandard2.0` for the same role.
+implementation" lives. `Xamarinme.Nfc` used `netstandard2.0` for the same role.
 
 ### `Microsoft.Maui.Core`, not `Controls` or `Essentials`
 
@@ -108,21 +108,25 @@ timestamp.
 Version 8 moved to a licence that requires payment for commercial use; 7.x is the last Apache-2.0
 release. The pin is deliberate — do not let a tool bump it.
 
-## `Directory.Build.props` and `.targets`, and the shields under `legacy/`
+## `Directory.Build.props` and `.targets`, and the shield under `legacy/`
 
 The repository-wide settings live at the root. `legacy/` has its **own empty**
-`Directory.Build.props` and `Directory.Build.targets`, because discovery stops at the first file
-found walking up: the imported Xamarin sources keep building exactly as they did. Enabling
-`Nullable` across `legacy/`, for instance, would bury the four advisory warnings that matter under
-dozens that do not. Those two shields are the only files added under `legacy/`; nothing imported has
-been edited.
+`Directory.Build.props`, because discovery stops at the first file found walking up: the imported
+Xamarin sources keep building exactly as they did. Enabling `Nullable` across `legacy/`, for
+instance, would bury the four advisory warnings that matter under dozens that do not. That shield is
+the only file added under `legacy/`; nothing imported has been edited.
 
-`Directory.Build.targets` writes **`Mauime.ReferencePaths.txt`** next to every built assembly,
-holding the `ReferencePath` item — exactly what the compiler was handed. The API baseline needs it: a
-library build does not copy its dependencies, so `Mono.Android`, `Microsoft.iOS` and the rest are
-nowhere near `bin/`, and guessing at the workload's reference-assembly folders would be a proxy for
-the truth. `MultiTargetingTests` asserts the file exists for every slice, because while the
-libraries are still empty its absence would not fail anything else.
+There is deliberately **no** matching `Directory.Build.targets` shield. The root targets file only
+writes **`Mauime.ReferencePaths.txt`** next to every built assembly, holding the `ReferencePath`
+item — exactly what the compiler was handed. That changes nothing about how code compiles, and the
+API baseline needs it on both sides: a library build does not copy its dependencies, so
+`Mono.Android`, `Microsoft.iOS` and the rest are nowhere near `bin/`, and neither are
+`Xamarinme.WebHostPatch`'s ASP.NET Core 2.2.0 ones. Guessing at either set of folders would be a
+proxy for the truth. There is now one code path for resolving any assembly rather than a manifest
+for Mauime and a bin-scan for legacy.
+
+`MultiTargetingTests` asserts the file exists for every slice, because for a library that is still
+empty its absence would not fail anything else.
 
 ## What `legacy/` is
 
@@ -135,18 +139,16 @@ deletion shows up as a diff. Four projects are in the solution:
 | `legacy/Hosting` | Yes — builds clean, referenced by the tests |
 | `legacy/WebHostPatch` | Yes — builds, with the four advisory warnings above |
 | `legacy/Microsoft.Extensions.Primitives.Patch` | Yes — WebHostPatch depends on it |
-| `legacy/Nfc` | **No** |
 
-`legacy/Nfc` is excluded because it cannot be built at all on this toolchain. It uses
-`MSBuild.Sdk.Extras/3.0.23` with `MonoAndroid10.0; Xamarin.iOS10; uap10.0.19041; Xamarin.Mac20`,
-which need desktop `msbuild.exe`, and its `netstandard2.0` slice fails on its own terms:
+`legacy/Nfc` was deleted in Phase 2, when `Mauime.Nfc` replaced it. It had never been in the
+solution: `MSBuild.Sdk.Extras/3.0.23` with `MonoAndroid10.0; Xamarin.iOS10; uap10.0.19041;
+Xamarin.Mac20` needs desktop `msbuild.exe`, and its `netstandard2.0` slice did not compile on its
+own terms either.
 
-```
-legacy/Nfc/CrossNfc.cs(30,24): error CS0246: The type or namespace name 'Nfc' could not be found
-```
-
-Adding it to the solution would make the whole build fail. It has no runtime coverage for the same
-reason.
+`legacy/` no longer has a `Directory.Build.targets` shield, only a `Directory.Build.props` one. The
+root targets file just writes a `Mauime.ReferencePaths.txt` beside each assembly, which changes
+nothing about how the code compiles and is what lets the API baseline resolve
+`Xamarinme.WebHostPatch`'s 2.2.0-era dependencies.
 
 Building the solution also drops `Xamarinme.Configuration.1.0.3.nupkg`,
 `Xamarinme.Hosting.1.0.4.nupkg` and `Xamarinme.WebHostPatch.1.0.0.nupkg` into `legacy/*/bin`, because
@@ -155,22 +157,44 @@ changed, so they were left alone. **Note the versions: two of them are ahead of 
 nuget.org** (Configuration 1.0.2, Hosting 1.0.3). Never treat a csproj version here as the live
 version.
 
-## The test suite
+## Two test projects, and why
 
-74 tests, all passing, in Debug and Release.
+120 tests, all passing, in Debug and Release.
+
+`Mauime.Tests` covers the Mauime libraries and the API baseline. `Legacy.Tests` covers `legacy/`.
+**They are separate because they have to be.** `legacy/WebHostPatch`'s vendored
+`Microsoft.Extensions.Primitives` is stamped 5.9.0.0 and occupies that assembly's filename in any
+output directory it reaches; `Microsoft.Maui.Core` wants 10.0.0. The moment the single test project
+referenced `Mauime.Nfc`, thirty tests with nothing to do with NFC failed with
+`FileNotFoundException`. Making them coexist would have meant hiding the very defect the fork is
+pinned for. `Legacy.Tests` dies with `legacy/`.
+
+### `Mauime.Tests`
+
+| File | Covers |
+|---|---|
+| `NdefTests` | The NDEF codec, against byte vectors captured from NdefLibrary 4.1.0's own output. |
+| `NfcRegistrationTests` | `UseMauimeNfc`, and the platform-neutral implementation's refusals. |
+| `PublicApiSurfaceTests` | The whole public surface, legacy and Mauime, against `PublicApi.approved.txt`. |
+| `MultiTargetingTests` | That every library is built for every expected framework, that every platform slice exposes the same surface as the `net10.0` one, and that every slice records its reference paths. |
+| `KnownDefectTests` | The Xamarinme defects the port fixed, rewritten from the pins that recorded them. |
+| `PublicApiDumper` / `TestAssemblies` / `SimpleNameResolver` | The machinery: metadata-only reflection, configuration-aware assembly lookup. |
+
+### `Legacy.Tests`
 
 | File | Covers |
 |---|---|
 | `ConfigurationCharacterizationTests` | What `Xamarinme.Configuration` 1.0.3 actually does — key flattening, environment layering, and the Newtonsoft rendering quirks. |
 | `HostingCharacterizationTests` | `XamarinHostBuilder`, the `XAMARIN_ENVIRONMENT` lookup, and the configuration object that is its own builder and root. |
 | `WebHostPatchCharacterizationTests` | `ConsoleLifetimePatch`'s status logging and lifetime callbacks. |
-| `PublicApiSurfaceTests` | The whole public surface against `PublicApi.approved.txt`. |
-| `MultiTargetingTests` | That every library is built for every expected framework, that every platform slice exposes the same surface as the `net10.0` one, and that every slice records its reference paths. |
-| `PublicApiDumper` / `TestAssemblies` / `SimpleNameResolver` | The machinery: metadata-only reflection, configuration-aware assembly lookup. |
-| `KnownDefectTests` | One test per defect. |
+| `KnownDefectTests` | One test per defect still in `legacy/`. |
 
-`RunPatchedAsync` has no behavioural coverage: it needs a live ASP.NET Core 2.2 `IWebHost`. It is
-covered by the API baseline only, and that is stated rather than papered over.
+Two gaps are stated rather than papered over. `RunPatchedAsync` has no behavioural coverage — it
+needs a live ASP.NET Core 2.2 `IWebHost`. And **`Mauime.Nfc`'s Android and iOS implementations have
+none either**: a net10.0 test project resolves the net10.0 slice, which is the one with no
+implementation, so those two are held by the API baseline, `MultiTargetingTests` and source pins.
+`LIMITATION_The_Android_and_iOS_implementations_have_no_behavioural_coverage` asserts that gap, so
+it fails if it ever closes.
 
 ## The defect-test convention
 
@@ -217,5 +241,8 @@ breaking the thing it guards:
 | Add a platform-specific member to one slice of `Mauime.Nfc` | 2 failures — baseline and multi-targeting |
 | Delete one target framework's build output | 1 failure |
 | Delete one slice's `Mauime.ReferencePaths.txt` | 1 failure |
+| Swap message-begin for message-end in the NDEF serializer | 10 failures |
+| Ask for an immutable `PendingIntent` again | 1 failure |
+| Let the unsupported platform succeed silently | 1 failure |
 
 The suite is then run 30 times in a row against the restored tree, with no flakes.

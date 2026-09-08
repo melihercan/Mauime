@@ -8,7 +8,7 @@ are being replaced library by library.
 
 | Planned package | Replaces | Status |
 |---|---|---|
-| `Mauime.Nfc` | `Xamarinme.Nfc` — never published | Project set up, no code yet |
+| `Mauime.Nfc` | `Xamarinme.Nfc` — never published | **Ported** — Android and iOS implemented |
 | `Mauime.Configuration` | [`Xamarinme.Configuration`](https://www.nuget.org/packages/Xamarinme.Configuration) 1.0.2 | Project set up, no code yet |
 | `Mauime.Hosting` | [`Xamarinme.Hosting`](https://www.nuget.org/packages/Xamarinme.Hosting) 1.0.3 | Project set up, no code yet |
 | `Mauime.WebHostPatch` | [`Xamarinme.WebHostPatch`](https://www.nuget.org/packages/Xamarinme.WebHostPatch) 1.0.0 | Project set up, no code yet |

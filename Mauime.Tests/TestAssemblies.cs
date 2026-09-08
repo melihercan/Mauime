@@ -141,48 +141,35 @@ internal static class TestAssemblies
     /// System.Runtime out of the Android ref pack, not out of the runtime this test happens to be
     /// running on, or the two worlds meet and types stop matching.
     ///
-    /// For a legacy assembly there is no such file — legacy/ is shielded from the repository's
-    /// build customisation on purpose — so the old bin-scan is used instead.
+    /// Legacy assemblies get the same treatment, which is why legacy/ has no
+    /// Directory.Build.targets shield: without the manifest the baseline cannot resolve
+    /// Xamarinme.WebHostPatch's ASP.NET Core 2.2.0 dependencies, which live in no directory the
+    /// baseline would otherwise think to look in.
     /// </summary>
     internal static IEnumerable<string> ProbingFiles(string dllPath)
     {
         var directory = Path.GetDirectoryName(dllPath)!;
         var referencePaths = Path.Combine(directory, "Mauime.ReferencePaths.txt");
 
-        if (File.Exists(referencePaths))
+        if (!File.Exists(referencePaths))
         {
-            // The project directory: MSBuild writes some entries relative to it (the generated
-            // Android resource designer, for one).
-            var projectDirectory = Path.Combine(RepositoryRoot, Path.GetFileNameWithoutExtension(dllPath));
-
-            var references = File.ReadAllLines(referencePaths)
-                .Where(line => !string.IsNullOrWhiteSpace(line))
-                .Select(line => Path.IsPathRooted(line) ? line : Path.Combine(projectDirectory, line))
-                .Where(File.Exists);
-
-            return references.Concat(Directory.GetFiles(directory, "*.dll"));
+            throw new FileNotFoundException(
+                $"'{referencePaths}' is missing. Directory.Build.targets writes it beside every "
+                + "assembly; build the solution before running the API baseline.",
+                referencePaths);
         }
 
-        return LegacyProbingFiles();
-    }
+        // bin/<configuration>/<framework>/x.dll, so the project directory is three levels up.
+        // MSBuild writes some entries relative to it — the generated Android resource designer,
+        // for one.
+        var projectDirectory = Directory.GetParent(directory)?.Parent?.Parent?.FullName
+            ?? throw new InvalidOperationException($"'{dllPath}' is not under a bin/<config>/<tfm> path.");
 
-    private static IEnumerable<string> LegacyProbingFiles()
-    {
-        var directories = new List<string>
-        {
-            Path.GetDirectoryName(typeof(object).Assembly.Location)!,
-            Path.GetDirectoryName(typeof(TestAssemblies).Assembly.Location)!,
-        };
+        var references = File.ReadAllLines(referencePaths)
+            .Where(line => !string.IsNullOrWhiteSpace(line))
+            .Select(line => Path.IsPathRooted(line) ? line : Path.Combine(projectDirectory, line))
+            .Where(File.Exists);
 
-        foreach (var name in LegacyNames)
-        {
-            var bin = Path.Combine(RepositoryRoot, LegacyProjects[name], "bin");
-            if (!Directory.Exists(bin)) continue;
-
-            directories.AddRange(Directory.GetFiles(bin, name + ".dll", SearchOption.AllDirectories)
-                .Select(dll => Path.GetDirectoryName(dll)!));
-        }
-
-        return directories.Distinct().SelectMany(d => Directory.GetFiles(d, "*.dll"));
+        return references.Concat(Directory.GetFiles(directory, "*.dll"));
     }
 }

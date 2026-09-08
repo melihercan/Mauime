@@ -6,7 +6,7 @@ using Microsoft.Extensions.Options;
 using NSubstitute;
 using Xunit;
 
-namespace Mauime.Tests;
+namespace Legacy.Tests;
 
 /// <summary>
 /// What Xamarinme.WebHostPatch 1.0.0 actually does, pinned before anything is ported.

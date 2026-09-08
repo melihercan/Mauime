@@ -144,21 +144,51 @@ It is also written against `IWebHost`, `WebHostBuilder`, `IHostingEnvironment` a
 one ([GHSA-prrf-397v-83xh](https://github.com/advisories/GHSA-prrf-397v-83xh), IIS). Version 1.0.0 is
 on nuget.org with 30,366 downloads and every consumer inherits both.
 
-### `Xamarinme.Nfc` → the one with a reason to exist
+### `Xamarinme.Nfc` → `Mauime.Nfc`, ported
 
-~1,260 real lines: Android (`NfcAdapter`, foreground dispatch, activity lifecycle), iOS (CoreNFC),
-and UWP plus macOS as thin shims over a shared 678-line PC/SC implementation. MAUI has no NFC
-support, so this is the library the port is actually for. It was never published, so there is not
-even an old version to be compatible with.
+MAUI has no NFC support, so this is the library the port was actually for. It was never published,
+so there was not even an old version to stay compatible with — which is why the API is smaller than
+what it replaced rather than a translation of it.
 
-Three things it drags along:
+**`INfc` is the surface**, resolved from DI after `builder.UseMauimeNfc()`. Every implementation is
+`internal`, which is what allows `MultiTargetingTests` to hold all five slices to one public API.
+Gone: `CrossNfc.Current` (a 2019 static locator), the per-platform public `Nfc` classes, the unused
+`NfcTagStatus`, and the `Nfc.OnNewIntent(intent)` call consumers had to add to their own
+`MainActivity` — that hook is now wired by the library through `ConfigureLifecycleEvents`.
 
-- **`NdefLibrary` 4.1.0 is from 2017 and ships a `netstandard1.4` asset only**, and it is in the
-  *public API*: `INfc.ReadNdefAsync()` returns `NdefLibrary.Ndef.NdefMessage`. New package IDs mean
-  this can be replaced; keeping it bakes a dead dependency into the surface.
-- `PCSC`, `PCSC.Iso7816` and `PCSC.Reactive` are alive at **7.0.1**; the repository pins 5.0.0.
-- Xamarin.Mac → Mac Catalyst is not a rename. Catalyst is sandboxed, and the PC/SC path may not
-  survive it.
+**The NDEF types are ours.** `NdefLibrary` 4.1.0 was verified to restore, compile and run on
+.NET 10, so dropping it was a choice rather than a forced move: it is a 2017 package with a
+netstandard1.4 asset only, and it was in the *public* API, since `ReadNdefAsync` returned its
+`NdefMessage`. `Mauime.Nfc` has no third-party dependencies at all.
+
+The codec is pinned against NdefLibrary's own output. Every byte vector in `NdefTests` was captured
+by running NdefLibrary 4.1.0 and recording what it emitted, because the port's real risk is a codec
+that disagrees with the old one and corrupts tags silently. **Do not regenerate those vectors from
+the code under test.** Chunked records are refused rather than mis-parsed.
+
+**Android and iOS only.** Mac Catalyst has no NFC hardware API — CoreNFC is iOS-only — and Windows
+would mean the 678-line PC/SC layer and three `PCSC` packages, for an external USB reader rather
+than phone NFC. Those two share the platform-neutral implementation, which throws
+`PlatformNotSupportedException`, so an app targeting everything needs no conditional registration.
+
+Platform sources are selected by **explicit `Compile Include` conditions**. The `Platforms/` folder
+convention is an app thing; in a class library those files compile into every target framework,
+which was checked rather than assumed.
+
+### The gap in Mauime.Nfc's coverage
+
+**Neither platform implementation has behavioural coverage.** A net10.0 test project resolves the
+net10.0 slice, which is the one with no implementation, so nothing exercises `AndroidNfc` or
+`IosNfc`. They are held by the API baseline, by `MultiTargetingTests` and by source pins — which is
+a real guard on their shape and none at all on their behaviour.
+
+That includes the two most valuable fixes the port made: the `PendingIntent` flags, without which
+`EnableSessionAsync` throws on every Android 12 or later device, and the CoreNFC callbacks, which
+used to throw on a dispatch queue where nothing could observe it and left callers awaiting forever.
+
+`LIMITATION_The_Android_and_iOS_implementations_have_no_behavioural_coverage` asserts the gap so it
+fails if it ever closes. Closing it needs a device-test harness, which was deliberately not taken
+on.
 
 ## Deletions that are not ports
 

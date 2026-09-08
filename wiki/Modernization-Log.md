@@ -137,6 +137,90 @@ byte, never the Android one. That is why the platform slices can only be covered
 74 tests, green in Debug and Release, 30 consecutive clean runs. The three new tests were each
 proven by breaking what they guard.
 
+## Phase 2 — Mauime.Nfc
+
+The port of the one library with a clear reason to exist. `legacy/Nfc` was deleted in the same
+commit; it had never built on this toolchain anyway.
+
+Three decisions were taken before any code was written, and all three removed dependencies rather
+than adding them, so **the phase added no NuGet packages at all**:
+
+- **NDEF is implemented here.** `NdefMessage`, `NdefRecord` and `NdefTypeNameFormat` replace
+  NdefLibrary 4.1.0 — a 2017 package with a netstandard1.4 asset that sat in the public API, since
+  `ReadNdefAsync` returned its type. It was verified to restore, compile *and run* on .NET 10 before
+  being dropped, so this was a choice rather than a forced move.
+- **Android and iOS only.** Mac Catalyst and Windows would have meant the 678-line PC/SC layer and
+  three `PCSC` packages, for an external USB reader rather than phone NFC. They share the
+  platform-neutral implementation, which throws `PlatformNotSupportedException`.
+- **DI instead of a static locator.** `builder.UseMauimeNfc()` registers `INfc`; `CrossNfc.Current`
+  is gone.
+
+### The API is smaller than what it replaced
+
+Every implementation is `internal`, so all five slices expose one surface —
+`INfc`, `MauimeNfcExtensions`, `NfcTagDetectedEventArgs` and the three NDEF types.
+`CrossNfc`, the per-platform public `Nfc` classes, the manual `OnNewIntent` hook and the unused
+`NfcTagStatus` are all gone. `MultiTargetingTests` stopped being vacuous the moment there was a
+surface to compare.
+
+`UseMauimeNfc` wires Android's `OnNewIntent` through `ConfigureLifecycleEvents`, so consumers no
+longer hand-edit `MainActivity`.
+
+### Defects fixed, and how far each is proved
+
+The two Phase 0 pins were rewritten as `FIXED_`. Reading the implementations turned up four more,
+none of them visible from the API:
+
+| Fixed | How it is proved |
+|---|---|
+| `PendingIntent.GetActivity(..., 0)` threw on **Android 12 and later** — API 31 made FLAG_MUTABLE/FLAG_IMMUTABLE mandatory, so `EnableSessionAsync` crashed on every current phone | source pin |
+| iOS threw from inside CoreNFC completion callbacks, on the session's dispatch queue, where the throw could not reach the awaiting caller — a failed read or write left the caller awaiting forever | source pin |
+| `Dispose()` was empty on Android, so the `ActivityStateChanged` subscription kept the instance alive for the life of the process | source-visible |
+| `catch { if (ndef.IsConnected) ... }` ran on a variable still `null` whenever the failure happened first, masking the real error with a `NullReferenceException`; also `throw ex;` in three places, resetting the stack trace | source-visible |
+| The activity was captured in the constructor and went stale on recreation; `DispatchQueue.CurrentQueue` has been obsolete since iOS 6 | source-visible |
+
+**None of the Android or iOS fixes has behavioural coverage**, and
+`LIMITATION_The_Android_and_iOS_implementations_have_no_behavioural_coverage` asserts that fact so
+it fails if it ever stops being true. A net10.0 test project resolves the net10.0 slice, which is
+the one with no implementation. Closing that gap needs the device-test harness that was deliberately
+not taken on.
+
+What *is* covered by running it: the NDEF codec, the DI registration and the platform-neutral
+implementation — 40 tests.
+
+### The NDEF codec is pinned against NdefLibrary's own output
+
+The port's real risk is a codec that disagrees with the old one, which would corrupt tags silently.
+So the byte vectors in `NdefTests` were not invented: each was produced by running NdefLibrary 4.1.0
+on .NET 10 and capturing what it emitted — a short text record, a two-record message, a record with
+an identifier, a 300-byte payload using the four-byte length field, and the empty record. Mauime
+produces the same bytes for all of them.
+
+Malformed input is refused rather than mis-parsed, including a four-byte payload length claiming
+more than the buffer holds, which would otherwise overflow to a negative length or try to allocate
+4 GB.
+
+### The forked Primitives split the test project in two
+
+Adding a reference to `Mauime.Nfc` broke **thirty tests that had nothing to do with NFC**.
+`Microsoft.Maui.Core` wants `Microsoft.Extensions.Primitives` 10.0.0; `legacy/WebHostPatch`'s
+vendored fork is stamped 5.9.0.0 and occupies that filename in the output directory; the real one
+therefore never arrives and everything needing it fails with `FileNotFoundException`.
+
+That fork cannot share a process with modern `Microsoft.Extensions`, so the tests were split:
+`Mauime.Tests` for the libraries and the API baseline, `Legacy.Tests` for the characterization of
+`legacy/`. Making them coexist would have meant hiding the very defect the fork is pinned for.
+`Legacy.Tests` dies with `legacy/`.
+
+It also removed the last heuristic from the baseline machinery: `legacy/` lost its
+`Directory.Build.targets` shield so its assemblies emit `Mauime.ReferencePaths.txt` too, and there
+is now one code path for resolving any assembly instead of a manifest for Mauime and a bin-scan for
+legacy.
+
+120 tests, green in Debug and Release. Every new test was proven by breaking what it guards:
+inverting the message-begin flag failed 10, restoring the immutable `PendingIntent` failed 1, and
+letting the unsupported platform succeed silently failed 1.
+
 ## Decisions taken before Phase 0
 
 - **Fresh git history.** Mauime does not carry Xamarinme's 153 commits.

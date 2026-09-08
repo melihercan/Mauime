@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>Legacy.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <!--
+    Characterization of the imported Xamarin libraries, in a project of its own because
+    legacy/WebHostPatch cannot share one with anything modern.
+
+    Its vendored fork of Microsoft.Extensions.Primitives is stamped 5.9.0.0 and occupies that
+    assembly's filename in the output directory, shadowing whatever the rest of the project needs.
+    The moment Mauime.Tests referenced Mauime.Nfc, Microsoft.Maui.Core asked for Primitives 10.0.0,
+    the fork was what was on disk, and thirty tests that had nothing to do with either failed with
+    FileNotFoundException. Keeping the fork in a project that contains only legacy code is the fix;
+    making the two coexist would have meant hiding exactly the defect the fork is pinned for.
+
+    This project dies with legacy/.
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\legacy\Configuration\Configuration.csproj" />
+    <ProjectReference Include="..\legacy\Hosting\Hosting.csproj" />
+    <ProjectReference Include="..\legacy\WebHostPatch\WebHostPatch.csproj" />
+  </ItemGroup>
+
+  <!-- Xamarinme.Configuration reads appsettings.json out of an assembly's manifest resources,
+       so the fixtures have to be embedded in this assembly to be reachable at all. -->
+  <ItemGroup>
+    <EmbeddedResource Include="TestAssets\**\*.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentAssertions" Version="7.2.2" />
+    <PackageReference Include="xunit.v3" Version="4.0.0" />
+    <PackageReference Include="NSubstitute" Version="6.2.0" />
+  </ItemGroup>
+
+</Project>

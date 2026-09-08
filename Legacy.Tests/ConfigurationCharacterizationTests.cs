@@ -4,7 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Xamarinme;
 using Xunit;
 
-namespace Mauime.Tests;
+namespace Legacy.Tests;
 
 /// <summary>
 /// What Xamarinme.Configuration 1.0.3 actually does, pinned before anything is ported.
@@ -21,7 +21,7 @@ namespace Mauime.Tests;
 /// </summary>
 public class ConfigurationCharacterizationTests
 {
-    private const string Basic = "Mauime.Tests.TestAssets.Basic";
+    private const string Basic = "Legacy.Tests.TestAssets.Basic";
 
     private static IConfigurationRoot Build(string prefix, string? environment = null)
     {
@@ -142,7 +142,7 @@ public class ConfigurationCharacterizationTests
         // The parser's own duplicate-key guard, reached because it folds keys case-insensitively
         // while JSON does not. Two properties with the identical name never get this far: Newtonsoft
         // rejects those itself, with a different exception. See KnownDefectTests.
-        var build = () => Build("Mauime.Tests.TestAssets.CaseCollision");
+        var build = () => Build("Legacy.Tests.TestAssets.CaseCollision");
 
         build.Should().Throw<FormatException>().WithMessage("*duplicate key*");
     }
@@ -152,7 +152,7 @@ public class ConfigurationCharacterizationTests
     {
         // Not wrapped in anything of the library's own, so callers have to reference Newtonsoft to
         // catch it by type. Pinned because dropping Newtonsoft will necessarily change it.
-        var build = () => Build("Mauime.Tests.TestAssets.Malformed");
+        var build = () => Build("Legacy.Tests.TestAssets.Malformed");
 
         build.Should().Throw<Newtonsoft.Json.JsonException>();
     }

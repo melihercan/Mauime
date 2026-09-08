@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 using Xamarinme;
 using Xunit;
 
-namespace Mauime.Tests;
+namespace Legacy.Tests;
 
 /// <summary>
 /// What Xamarinme.Hosting 1.0.4 actually does, pinned before anything is ported.
@@ -28,7 +28,7 @@ public class HostingCharacterizationTests
     [Fact]
     public void CreateDefault_exposes_configuration_services_environment_and_logging()
     {
-        var builder = CreateDefault("Mauime.Tests.TestAssets.EnvMissing");
+        var builder = CreateDefault("Legacy.Tests.TestAssets.EnvMissing");
 
         builder.Configuration.Should().NotBeNull();
         builder.Services.Should().NotBeNull();
@@ -41,21 +41,21 @@ public class HostingCharacterizationTests
     [Fact]
     public void The_environment_is_Production_when_the_setting_is_absent()
     {
-        CreateDefault("Mauime.Tests.TestAssets.EnvMissing")
+        CreateDefault("Legacy.Tests.TestAssets.EnvMissing")
             .HostEnvironment.Environment.Should().Be("Production");
     }
 
     [Fact]
     public void The_environment_comes_from_XAMARIN_ENVIRONMENT_in_the_base_file()
     {
-        CreateDefault("Mauime.Tests.TestAssets.EnvDevelopment")
+        CreateDefault("Legacy.Tests.TestAssets.EnvDevelopment")
             .HostEnvironment.Environment.Should().Be("Development");
     }
 
     [Fact]
     public void The_environment_file_is_layered_once_XAMARIN_ENVIRONMENT_selects_it()
     {
-        var builder = CreateDefault("Mauime.Tests.TestAssets.EnvDevelopment");
+        var builder = CreateDefault("Legacy.Tests.TestAssets.EnvDevelopment");
 
         builder.Configuration["Build"].Should().Be("FromEnvironmentFile");
     }
@@ -63,14 +63,14 @@ public class HostingCharacterizationTests
     [Fact]
     public void Configuration_is_readable_straight_off_the_builder_without_calling_Build()
     {
-        CreateDefault("Mauime.Tests.TestAssets.EnvMissing")
+        CreateDefault("Legacy.Tests.TestAssets.EnvMissing")
             .Configuration["Build"].Should().Be("Base");
     }
 
     [Fact]
     public void Build_returns_a_host_whose_services_resolve_configuration_and_environment()
     {
-        var host = CreateDefault("Mauime.Tests.TestAssets.EnvDevelopment").Build();
+        var host = CreateDefault("Legacy.Tests.TestAssets.EnvDevelopment").Build();
 
         host.Services.GetRequiredService<IConfiguration>()["Build"].Should().Be("FromEnvironmentFile");
         host.Services.GetRequiredService<IXamarinHostEnvironment>().Environment.Should().Be("Development");
@@ -79,7 +79,7 @@ public class HostingCharacterizationTests
     [Fact]
     public void Build_resolves_the_logger_factory_the_constructor_configured()
     {
-        var host = CreateDefault("Mauime.Tests.TestAssets.EnvMissing").Build();
+        var host = CreateDefault("Legacy.Tests.TestAssets.EnvMissing").Build();
 
         host.Services.GetRequiredService<ILogger<HostingCharacterizationTests>>().Should().NotBeNull();
     }
@@ -87,7 +87,7 @@ public class HostingCharacterizationTests
     [Fact]
     public void User_registered_services_survive_to_the_built_host()
     {
-        var builder = CreateDefault("Mauime.Tests.TestAssets.EnvMissing");
+        var builder = CreateDefault("Legacy.Tests.TestAssets.EnvMissing");
         builder.Services.AddSingleton<ISample, Sample>();
 
         builder.Build().Services.GetRequiredService<ISample>().Should().BeOfType<Sample>();
@@ -96,7 +96,7 @@ public class HostingCharacterizationTests
     [Fact]
     public void The_environment_is_injectable_into_a_registered_service()
     {
-        var builder = CreateDefault("Mauime.Tests.TestAssets.EnvDevelopment");
+        var builder = CreateDefault("Legacy.Tests.TestAssets.EnvDevelopment");
         builder.Services.AddSingleton<ISample, Sample>();
 
         var sample = (Sample)builder.Build().Services.GetRequiredService<ISample>();
@@ -111,7 +111,7 @@ public class HostingCharacterizationTests
         // XamarinHostConfiguration is a copy of Blazor's WebAssemblyHostConfiguration: one object
         // implementing IConfiguration, IConfigurationRoot and IConfigurationBuilder at once, so it
         // can be read while it is still being built.
-        var configuration = CreateDefault("Mauime.Tests.TestAssets.EnvMissing").Configuration;
+        var configuration = CreateDefault("Legacy.Tests.TestAssets.EnvMissing").Configuration;
 
         configuration.Should().BeAssignableTo<IConfiguration>();
         configuration.Should().BeAssignableTo<IConfigurationRoot>();
@@ -123,7 +123,7 @@ public class HostingCharacterizationTests
     [Fact]
     public void The_configuration_reports_one_provider_per_added_source()
     {
-        var configuration = (IConfigurationRoot)CreateDefault("Mauime.Tests.TestAssets.EnvMissing").Configuration;
+        var configuration = (IConfigurationRoot)CreateDefault("Legacy.Tests.TestAssets.EnvMissing").Configuration;
 
         configuration.Providers.Should().ContainSingle()
             .Which.Should().BeOfType<EmbeddedResourceConfigurationProvider>();

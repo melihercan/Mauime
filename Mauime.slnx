@@ -8,6 +8,7 @@
   <Folder Name="/legacy/Microsoft.Extensions.Primitives.Patch/src/">
     <Project Path="legacy/Microsoft.Extensions.Primitives.Patch/src/Microsoft.Extensions.Primitives.Patch.csproj" />
   </Folder>
+  <Project Path="Legacy.Tests/Legacy.Tests.csproj" />
   <Project Path="Mauime.Configuration/Mauime.Configuration.csproj" />
   <Project Path="Mauime.Hosting/Mauime.Hosting.csproj" />
   <Project Path="Mauime.Nfc/Mauime.Nfc.csproj" />

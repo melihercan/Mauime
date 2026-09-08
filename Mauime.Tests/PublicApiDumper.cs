@@ -110,8 +110,11 @@ internal static class PublicApiDumper
         MethodInfo m =>
             $"method {(m.IsStatic ? "static " : "")}{(m.IsVirtual && !m.IsFinal && !m.DeclaringType!.IsInterface ? "virtual " : "")}"
             + $"{Render(m.ReturnType)} {m.Name}{GenericParameters(m)}({Parameters(m)})",
+        // static is rendered here as well as on methods and fields: moving a member between static
+        // and instance changes the call site, so the baseline has to see it.
         PropertyInfo p =>
-            $"property {Render(p.PropertyType)} {p.Name} {{ {(p.GetMethod is not null && Visible(p.GetMethod) ? "get; " : "")}"
+            $"property {((p.GetMethod ?? p.SetMethod)!.IsStatic ? "static " : "")}"
+            + $"{Render(p.PropertyType)} {p.Name} {{ {(p.GetMethod is not null && Visible(p.GetMethod) ? "get; " : "")}"
             + $"{(p.SetMethod is not null && Visible(p.SetMethod) ? "set; " : "")}}}",
         EventInfo e =>
             $"event {Render(e.EventHandlerType!)} {e.Name}",

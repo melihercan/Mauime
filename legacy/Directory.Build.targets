@@ -1,9 +1,0 @@
-<Project>
-
-  <!--
-    Deliberately empty, for the same reason as legacy/Directory.Build.props: the imported Xamarin
-    sources must keep building exactly as they did. Their assemblies are found by scanning bin/,
-    which works because they are plain netstandard2.0.
-  -->
-
-</Project>

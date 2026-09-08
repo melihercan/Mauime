@@ -10,8 +10,9 @@ this is a port, not a framework bump: new repository, fresh git history, **new p
 (`Mauime.*`), and a per-library question of whether the library should exist at all.
 
 **Nothing is published yet.** The work is phased, one commit per phase on `master`, and each phase
-needs a go-ahead. Phase 0 (characterization) and Phase 1 (the MAUI skeleton) are done. **The four
-library projects exist and build, but contain no code**; nothing has been ported.
+needs a go-ahead. Phases 0 (characterization), 1 (the MAUI skeleton) and 2 (`Mauime.Nfc`) are done.
+`Mauime.Configuration`, `Mauime.Hosting` and `Mauime.WebHostPatch` exist and build but contain no
+code yet.
 
 ## Repository layout
 
@@ -20,7 +21,12 @@ library projects exist and build, but contain no code**; nothing has been ported
   `net10.0-windows10.0.19041.0`.
 - `legacy/` — the Xamarin sources, imported verbatim so Phase 0 could pin real behaviour and every
   later deletion shows up as a diff. Transformed away as the port proceeds.
-- `Mauime.Tests/` — xUnit v3, one project for everything.
+- `Mauime.Tests/` — xUnit v3, the Mauime libraries and the API baseline.
+- `Legacy.Tests/` — characterization of `legacy/`. **Separate on purpose**: `legacy/WebHostPatch`'s
+  forked `Microsoft.Extensions.Primitives`, stamped 5.9.0.0, occupies that filename in whatever
+  output directory it reaches, so anything wanting the real 10.0.0 gets `FileNotFoundException`.
+  Referencing `Mauime.Nfc` from the old single project broke thirty unrelated tests exactly that
+  way. Do not merge them back; this project dies with `legacy/`.
 - `wiki/` — [Home](wiki/Home.md), [Building and Testing](wiki/Building-and-Testing.md),
   [Design Notes](wiki/Design-Notes.md), [Modernization Log](wiki/Modernization-Log.md).
 
@@ -81,6 +87,27 @@ It cannot be built on this toolchain: `MSBuild.Sdk.Extras/3.0.23` needs desktop 
 `MonoAndroid10.0; Xamarin.iOS10; uap10.0.19041; Xamarin.Mac20`, and the `netstandard2.0` slice fails
 on its own terms (`CrossNfc.cs(30,24): error CS0246`). Adding it to the solution breaks the build. It
 therefore has **no runtime coverage** in Phase 0; its two defects are pinned as source assertions.
+
+## Mauime.Nfc
+
+Android and iOS are implemented; `net10.0`, Mac Catalyst and Windows share `UnsupportedNfc`, which
+throws `PlatformNotSupportedException`. **Every implementation is `internal`** — that is what lets
+`MultiTargetingTests` hold all five slices to one public surface, so keep it that way.
+
+Platform sources are selected by **explicit `Compile Include` conditions** in the csproj. The
+`Platforms/` folder convention is an app thing: in a class library those files compile into every
+target framework, which was checked rather than assumed.
+
+The NDEF codec is ours, replacing NdefLibrary 4.1.0 — the package has **no third-party
+dependencies**. `NdefTests`' byte vectors were captured from NdefLibrary's own output, so they pin
+Mauime against what Xamarinme actually wrote to tags; do not regenerate them from the code under
+test.
+
+**The Android and iOS implementations have no behavioural coverage** and cannot get any from a
+net10.0 test project, which resolves the unsupported slice.
+`LIMITATION_The_Android_and_iOS_implementations_have_no_behavioural_coverage` asserts that, so it
+fails if the situation changes. Their fixes are held by source pins, which is a second choice and
+labelled as one.
 
 ## The API baseline
 

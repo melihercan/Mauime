@@ -20,4 +20,31 @@
     <PackageReference Include="Microsoft.Maui.Core" Version="$(MauiVersion)" />
   </ItemGroup>
 
+  <!--
+    Platform sources are selected explicitly. The Platforms/ convention is an app thing: in a MAUI
+    class library those folders are compiled into every target framework, which was checked rather
+    than assumed - Platforms/Android code failed to build for net10.0 until these conditions were
+    added.
+
+    Every slice gets exactly one NfcPlatform, so the shared code names no platform type and needs no
+    #if. Android and iOS have real implementations; net10.0, Mac Catalyst and Windows share the
+    unsupported one.
+  -->
+  <ItemGroup>
+    <Compile Remove="Platforms/**/*.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">
+    <Compile Include="Platforms/Android/**/*.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">
+    <Compile Include="Platforms/iOS/**/*.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) != 'android' AND
+                        $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) != 'ios'">
+    <Compile Include="Platforms/Unsupported/**/*.cs" />
+  </ItemGroup>
+
 </Project>
