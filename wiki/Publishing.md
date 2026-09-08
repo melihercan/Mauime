@@ -146,17 +146,40 @@ Token exchange failed (HTTP 401)
 No matching trust policy owned by user 'melihercan' was found.
 ```
 
-The policy records the repository name, and a rename leaves it pointing at a name that no longer
-exists. Nothing warns you: the policy still shows as **Active**, and the failure appears only on the
-next publish. After renaming the repository, edit the policy's **Repository** field to match.
+The policy records the repository **name**, captured when it is created, and matches the OIDC token
+on that name. A rename leaves it pointing at a name that no longer exists. Nothing warns you: the
+policy still shows **Active** with a correct-looking glob and scope, and the failure appears only on
+the next publish.
 
-The failure is at least loud and harmless — the token exchange happens before anything is pushed, so
-a stale policy cannot publish something wrong, it just cannot publish at all.
+**Editing cannot fix it.** The edit form has no Repository field — only Policy Name, Workflow File,
+Environment, Scopes and Glob. The repository is fixed at creation, so the policy must be deleted and
+recreated.
+
+**And recreating it with the old name silently reproduces the fault.** GitHub redirects the old name
+to the new one, so nuget.org resolves `Mauime` happily, stores `Mauime`, and fails to match a token
+claiming `Me.Toolkit.Maui` — the summary line then reads `Repository: Mauime #1361272941`, with the
+right repository ID beside the wrong name. That summary line is the only place the problem is
+visible; check it after creating the policy.
+
+The failure is at least harmless — the token exchange happens before anything is pushed, so a stale
+policy cannot publish something wrong, it just cannot publish at all.
 
 Because `Me.Toolkit.Maui.*` are new IDs with no existing owner, the glob has to permit **new** packages, not
 just new versions of existing ones — that is the "Push new packages and package versions" scope
 above. A policy limited to new versions works for every release after the first and fails on the
 first.
+
+### Validation is not instant
+
+A newly pushed package is accepted with `201 Created` and then goes through nuget.org's validation
+pipeline before it becomes downloadable. Until it clears, the version is *taken* — a second push
+gets `409 already exists` — but it is absent from the flat container and its package page returns
+404 to anyone but the owner.
+
+`26.9.9` took around three hours. Long enough that pending and failed are indistinguishable from
+outside, and only the owner's [account page](https://www.nuget.org/account/Packages) shows which. Do
+not conclude a push failed because the package is not there yet; check the push step's status line
+first, and the account page second.
 
 ### Rehearsing without publishing
 

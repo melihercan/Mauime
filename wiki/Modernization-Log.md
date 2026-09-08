@@ -593,6 +593,25 @@ was never re-examined. 26.9.9 is the same code with the assemblies and namespace
 The check that would have caught it — read what is inside the package that is actually on nuget.org,
 not the one just built — is worth more than any of the build-time verification around it.
 
+`publish.yml` now opens every `.nupkg` before pushing and fails if an assembly name does not match
+the package ID. It was checked against the real 26.9.9 packages and against a synthetic package
+carrying exactly the 26.9.8 mismatch.
+
+### Two more things the rename broke
+
+**The Trusted Publishing policy matches on repository name, not ID.** Renaming the repository left
+the policy pointing at `Mauime`; the next publish failed at the token exchange with *"No matching
+trust policy owned by user 'melihercan' was found"*, while the policy still displayed as Active. It
+cannot be repaired by editing — the edit form has no Repository field — and recreating it with the
+old name reproduces the fault silently, because GitHub redirects the old name and nuget.org stores
+what it was given. The wiki had claimed a rename was safe, on the strength of an inference from
+Blazorme's setup rather than anything verified.
+
+**Validation is not instant.** 26.9.9 was accepted with `201 Created`, then took about three hours
+to become downloadable. In between, the version is taken but absent everywhere public, so a push
+that succeeded looks exactly like one that failed. Fifteen minutes of polling was read as evidence
+of failure; it was evidence of nothing.
+
 ## Settled, and not to be reopened
 
 - **`26.9.8` is the version.** Date-based, matching Blazorme and Utilme. Publishing it closes the

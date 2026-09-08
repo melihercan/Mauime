@@ -3,7 +3,8 @@
 Libraries and plugins for .NET MAUI applications, ported from
 [Xamarinme](https://github.com/melihercan/Xamarinme) now that Xamarin is retired.
 
-**Three of the four are published at `26.9.9`.** `Me.Toolkit.Maui.Nfc` is held back as unfinished —
+**Three of the four are published at `26.9.9`**, verified by unzipping what nuget.org serves.
+`26.9.8` is unlisted: it shipped the right package ID around assemblies still called `Mauime.*`. `Me.Toolkit.Maui.Nfc` is held back as unfinished —
 it builds and is tested, but its reading session has never been used against a physical tag. See
 [Publishing](Publishing). `DemoApp/` is a single MAUI app with a tab per library, replacing Xamarinme's three
 Xamarin.Forms solutions across 17 projects. The Xamarin sources were imported under `legacy/` for the
