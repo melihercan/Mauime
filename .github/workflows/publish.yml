@@ -2,7 +2,7 @@ name: Publish
 
 # One workflow for every package, because a NuGet Trusted Publishing policy is bound to a single
 # workflow file *and* a single repository. Keeping this as one file means one policy - scoped to
-# "Mauime.*" - covers all three packages, every future version, and any future Mauime.X package.
+# "Toolkit.Mauime.*" - covers all three packages, every future version, and any future one.
 #
 # Ways in:
 #   * tag v<version>                — publishes every package
@@ -33,9 +33,9 @@ on:
         type: boolean
         default: true
       skip-duplicate:
-        description: 'Treat "already exists" as success (untick to see the real server response)'
+        description: 'Treat "already exists" as success (only for re-running a release already out)'
         type: boolean
-        default: true
+        default: false
 
 concurrency:
   group: publish
@@ -210,7 +210,7 @@ jobs:
       # expires and each token buys exactly one key.
       #
       # Requires a Trusted Publishing policy on nuget.org naming this repository and
-      # this workflow file, scoped to Mauime.*. No API key secret is involved.
+      # this workflow file, scoped to Toolkit.Mauime.*. No API key secret is involved.
       - name: NuGet login
         if: github.event_name == 'push' || inputs.dry-run == false
         id: login
@@ -231,9 +231,15 @@ jobs:
       - name: Push to NuGet
         if: github.event_name == 'push' || inputs.dry-run == false
         env:
+          # A tag push never skips duplicates. --skip-duplicate exists for deliberately re-running a
+          # release that is already out, and it cannot tell that case apart from a hard refusal: the
+          # first attempt to publish these packages got 409 "The package ID is reserved" three times
+          # and reported success, because that is a 409 like any other. Only a manual run can ask
+          # for it, and then it is the operator's choice rather than the default.
+          #
           # Both branches are non-empty strings on purpose. GitHub's "condition && a || b" idiom
           # silently returns b whenever a is falsy, and '' is falsy, so a branch of '' can never win.
-          SKIP_DUPLICATE: ${{ (github.event_name == 'workflow_dispatch' && inputs.skip-duplicate == false) && 'no' || 'yes' }}
+          SKIP_DUPLICATE: ${{ (github.event_name == 'workflow_dispatch' && inputs.skip-duplicate) && 'yes' || 'no' }}
           NUGET_API_KEY: ${{ steps.login.outputs.NUGET_API_KEY }}
         run: |
           set -euo pipefail

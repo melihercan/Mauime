@@ -6,7 +6,7 @@
     <SingleProject>true</SingleProject>
     <AssemblyName>Mauime.Hosting</AssemblyName>
     <RootNamespace>Mauime.Hosting</RootNamespace>
-    <PackageId>Mauime.Hosting</PackageId>
+    <PackageId>Toolkit.Mauime.Hosting</PackageId>
     <Version>26.09.08</Version>
     <Product>Mauime.Hosting</Product>
     <Description>Sets the host environment name of a .NET MAUI app, so IHostEnvironment.IsDevelopment() means something.

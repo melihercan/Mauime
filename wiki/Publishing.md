@@ -9,7 +9,7 @@ Packaging is done by GitHub Actions, in `.github/workflows/`.
 ## One workflow, on purpose
 
 A NuGet Trusted Publishing policy is bound to a **single workflow file** and a **single repository**,
-so one file means one policy covers every package, every future version, and any future `Mauime.X`
+so one file means one policy covers every package, every future version, and any future `Toolkit.Mauime.X`
 package. **Do not split publishing into per-package workflow files** — that would require a policy
 per file.
 
@@ -18,25 +18,57 @@ per file.
 | Trigger | Publishes |
 |---|---|
 | tag `v<version>` | every package |
-| tag `configuration-v<version>` | `Mauime.Configuration` only |
-| tag `hosting-v<version>` | `Mauime.Hosting` only |
-| tag `webhostpatch-v<version>` | `Mauime.WebHostPatch` only |
+| tag `configuration-v<version>` | `Toolkit.Mauime.Configuration` only |
+| tag `hosting-v<version>` | `Toolkit.Mauime.Hosting` only |
+| tag `webhostpatch-v<version>` | `Toolkit.Mauime.WebHostPatch` only |
 | manual run | defaults to a **dry run** that packs and uploads the `.nupkg` files as artifacts without publishing |
 
-The workflow verifies the tag matches each project's `<Version>`, runs the tests, and pushes with
-`--skip-duplicate` so a re-run is harmless. It packs with `--no-build`, so what is published is
-exactly what the tests ran against.
+The workflow verifies the tag matches each project's `<Version>`, runs the tests, and packs with
+`--no-build`, so what is published is exactly what the tests ran against.
 
-## `Mauime.Nfc` is not published
+A tag push does **not** pass `--skip-duplicate`. That flag is for deliberately re-running a release
+that is already out, and it cannot distinguish that from a refusal — the first attempt to publish
+these packages was rejected three times with `409 The package ID is reserved` and reported success,
+because that is a 409 like any other. Only a manual run can ask for it.
+
+## `Toolkit.Mauime.Nfc` is not published
 
 It builds, ships in the demo, and has tests — but its reading session is unfinished and has never
 been exercised against a physical tag. The project sets `IsPackable=false`, so a plain
-`dotnet pack` on the solution cannot produce a `Mauime.Nfc.nupkg` by accident; `publish.yml` has no
+`dotnet pack` on the solution cannot produce a `Toolkit.Mauime.Nfc.nupkg` by accident; `publish.yml` has no
 `nfc-v*` trigger either. Remove the `IsPackable` line and add the trigger together when it is ready.
 
 It is still **built** by the publish job, because the tests read every library's compiled assemblies
 off disk through `MetadataLoadContext`. Skipping its build fails `PublicApiSurfaceTests` and
 `MultiTargetingTests`, not just its own tests.
+
+## Why the IDs are prefixed
+
+The packages are `Toolkit.Mauime.*`, while the projects, assemblies and namespaces are `Mauime.*`.
+That mismatch is deliberate, and it is not a style choice.
+
+`Mauime.Configuration` cannot be published. nuget.org rejects it:
+
+```
+409 The package ID is reserved. You can upload your package with a different
+package ID. Reach out to support@nuget.org if you have questions.
+```
+
+An ID beginning with `Maui` is reserved. No package on nuget.org starts with those four letters —
+200 search results and eight targeted probes found none — and every community MAUI package puts the
+word second: `CommunityToolkit.Maui`, `Plugin.Maui.Audio`, `Syncfusion.Maui.Toolkit`. The clearest
+case is `Reactor.Maui`, whose project is *called* MauiReactor.
+
+`Blazor` and `Xamarin` were never reserved this way, which is why `Blazorme.*` and `Xamarinme.*`
+publish without trouble. Reservations are granted per request, not automatically for every Microsoft
+technology name, and MAUI's was taken when it shipped in 2022.
+
+Only the published ID changes. Consumers install `Toolkit.Mauime.Configuration` and write
+`using Mauime.Configuration;`, which is ordinary for a vendor- or toolkit-prefixed package.
+
+`Toolkit.*` is a shared namespace - `Toolkit.Data` and `Toolkit.CodeBase` belong to other people -
+so it cannot be prefix-reserved and carries no verified badge. An identity prefix such as
+`Melihercan.*` could be reserved; that was weighed and this was preferred.
 
 ## This must run on Windows
 
@@ -96,12 +128,12 @@ and fails at the final step. Created on nuget.org under Account → Trusted Publ
 | Workflow File | `publish.yml` (file name only, no path) |
 | Environment | *(none)* |
 | Scopes | Push new packages and package versions |
-| Glob | `Mauime.*` |
+| Glob | `Toolkit.Mauime.*` |
 
 The policy binds to the repository **ID**, not just its name, so a policy created for another
 repository can never cover this one however wide its glob.
 
-Because `Mauime.*` are new IDs with no existing owner, the glob has to permit **new** packages, not
+Because `Toolkit.Mauime.*` are new IDs with no existing owner, the glob has to permit **new** packages, not
 just new versions of existing ones — that is the "Push new packages and package versions" scope
 above. A policy limited to new versions works for every release after the first and fails on the
 first.
@@ -123,7 +155,7 @@ separately, so they cannot drift.
 
 Nothing here inherits a version history: these are new package IDs with no consumers, so there is no
 lowest-version or downgrade problem to reason about. The `Xamarinme.*` packages stay on nuget.org
-exactly as they are and are not deprecated — nothing referencing them will ever resolve a `Mauime.*`
+exactly as they are and are not deprecated — nothing referencing them will ever resolve a `Toolkit.Mauime.*`
 package, because NuGet has no redirect between IDs.
 
 ## There is no demo deployment

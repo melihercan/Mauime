@@ -13,15 +13,19 @@ characterization phase and deleted once each library had been replaced — the h
 The `Xamarinme.*` packages stay on nuget.org exactly as they are, and are **not** deprecated. That
 is a decision, not an oversight: `Blazorme.TestHost` looked like a precedent, but it worked because
 it kept the *same* package ID, so existing consumers could resolve a newer working version. Nothing
-referencing `Xamarinme.WebHostPatch` will ever resolve `Mauime.WebHostPatch` — NuGet has no redirect
+referencing `Xamarinme.WebHostPatch` will ever resolve `Toolkit.Mauime.WebHostPatch` — NuGet has no redirect
 between IDs.
 
 | Planned package | Replaces | Status |
 |---|---|---|
-| `Mauime.Nfc` | `Xamarinme.Nfc` — never published | **Ported, not published** — Android and iOS implemented, session unfinished; `IsPackable=false` |
-| `Mauime.Configuration` | [`Xamarinme.Configuration`](https://www.nuget.org/packages/Xamarinme.Configuration) 1.0.2 | **Ported** |
-| `Mauime.Hosting` | [`Xamarinme.Hosting`](https://www.nuget.org/packages/Xamarinme.Hosting) 1.0.3 | **Ported** |
-| `Mauime.WebHostPatch` | [`Xamarinme.WebHostPatch`](https://www.nuget.org/packages/Xamarinme.WebHostPatch) 1.0.0 | **Ported** — no patch needed on .NET 10 |
+| `Toolkit.Mauime.Nfc` | `Xamarinme.Nfc` — never published | **Ported, not published** — Android and iOS implemented, session unfinished; `IsPackable=false` |
+| `Toolkit.Mauime.Configuration` | [`Xamarinme.Configuration`](https://www.nuget.org/packages/Xamarinme.Configuration) 1.0.2 | **Ported** |
+| `Toolkit.Mauime.Hosting` | [`Xamarinme.Hosting`](https://www.nuget.org/packages/Xamarinme.Hosting) 1.0.3 | **Ported** |
+| `Toolkit.Mauime.WebHostPatch` | [`Xamarinme.WebHostPatch`](https://www.nuget.org/packages/Xamarinme.WebHostPatch) 1.0.0 | **Ported** — no patch needed on .NET 10 |
+
+The published IDs carry a `Toolkit.` prefix — `Toolkit.Mauime.Configuration` — because nuget.org
+rejects any ID beginning with `Maui` as reserved. Projects, assemblies and namespaces are unchanged;
+see [Publishing](Publishing).
 
 All four multi-target `net10.0`, `net10.0-android`, `net10.0-ios`, `net10.0-maccatalyst` and
 `net10.0-windows10.0.19041.0`.

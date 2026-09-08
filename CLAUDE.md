@@ -7,7 +7,7 @@ repository.
 
 A port of [Xamarinme](https://github.com/melihercan/Xamarinme) to .NET MAUI. Xamarin is retired, so
 this is a port, not a framework bump: new repository, fresh git history, **new package IDs**
-(`Mauime.*`), and a per-library question of whether the library should exist at all.
+(`Toolkit.Mauime.*`), and a per-library question of whether the library should exist at all.
 
 **Nothing is published yet.** The work is phased, one commit per phase on `master`, and each phase
 needs a go-ahead. Phases 0 (characterization), 1 (the MAUI skeleton), 2 (`Mauime.Nfc`), 3 (the other
@@ -87,7 +87,7 @@ iOS/Mac Catalyst *app* builds — library slices compile on Windows.
 would drift from `Directory.Build.props`.
 
 **Publishing is not set up.** It needs package versions and metadata, plus a NuGet Trusted
-Publishing policy scoped to `Mauime.*` and bound to this repository — one policy per workflow file,
+Publishing policy scoped to `Toolkit.Mauime.*` and bound to this repository — one policy per workflow file,
 so keep publishing in a single `publish.yml`.
 
 ## Mauime.Nfc
@@ -160,7 +160,7 @@ Verify a packaging change by **unzipping the `.nupkg`**, not by reading the buil
 
 Not deprecated, by decision. `Blazorme.TestHost` is not a precedent for rescuing them: that worked
 because it kept the **same package ID**, so consumers could resolve a newer working version of what
-they already referenced. `Mauime.*` are new IDs, and NuGet has no redirect between IDs at any target
+they already referenced. `Toolkit.Mauime.*` are new IDs, and NuGet has no redirect between IDs at any target
 framework. Do not spend effort trying to reach those consumers through multi-targeting.
 
 ## The API baseline
