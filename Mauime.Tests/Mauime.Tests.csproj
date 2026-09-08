@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>Mauime.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <!--
+    The legacy libraries are netstandard2.0, so unlike Blazorme's net5.0 libraries they can be
+    referenced from a net10.0 test project and characterized behaviourally, not just through
+    metadata. legacy/Nfc cannot: it needs desktop msbuild.exe for its MonoAndroid/Xamarin.iOS/uap
+    target frameworks, so it is not in the solution and has no coverage here.
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\legacy\Configuration\Configuration.csproj" />
+    <ProjectReference Include="..\legacy\Hosting\Hosting.csproj" />
+    <ProjectReference Include="..\legacy\WebHostPatch\WebHostPatch.csproj" />
+  </ItemGroup>
+
+  <!-- Xamarinme.Configuration reads appsettings.json out of an assembly's manifest resources,
+       so the fixtures have to be embedded in this assembly to be reachable at all. -->
+  <ItemGroup>
+    <EmbeddedResource Include="TestAssets\**\*.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentAssertions" Version="7.2.2" />
+    <PackageReference Include="xunit.v3" Version="4.0.0" />
+    <PackageReference Include="NSubstitute" Version="6.2.0" />
+    <PackageReference Include="System.Reflection.MetadataLoadContext" Version="10.0.0" />
+  </ItemGroup>
+
+</Project>

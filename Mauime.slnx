@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/legacy/">
+    <Project Path="legacy/Configuration/Configuration.csproj" />
+    <Project Path="legacy/Hosting/Hosting.csproj" />
+    <Project Path="legacy/WebHostPatch/WebHostPatch.csproj" />
+  </Folder>
+  <Folder Name="/legacy/Microsoft.Extensions.Primitives.Patch/" />
+  <Folder Name="/legacy/Microsoft.Extensions.Primitives.Patch/src/">
+    <Project Path="legacy/Microsoft.Extensions.Primitives.Patch/src/Microsoft.Extensions.Primitives.Patch.csproj" />
+  </Folder>
+  <Project Path="Mauime.Tests/Mauime.Tests.csproj" />
+</Solution>

@@ -1,0 +1,54 @@
+assembly Xamarinme.Configuration
+  type Xamarinme.EmbeddedResourceConfigurationExtensions : static class
+    method static Microsoft.Extensions.Configuration.IConfigurationBuilder AddEmbeddedResource(Microsoft.Extensions.Configuration.IConfigurationBuilder builder, System.Action<Xamarinme.EmbeddedResourceConfigurationSource> configurationSource)
+    method static Microsoft.Extensions.Configuration.IConfigurationBuilder AddEmbeddedResource(Microsoft.Extensions.Configuration.IConfigurationBuilder builder, Xamarinme.EmbeddedResourceConfigurationOptions options, System.String environment = "Production")
+  type Xamarinme.EmbeddedResourceConfigurationOptions : class
+    ctor .ctor()
+    property System.Reflection.Assembly Assembly { get; set; }
+    property System.String Prefix { get; set; }
+  type Xamarinme.EmbeddedResourceConfigurationProvider : class
+    ctor .ctor(Xamarinme.EmbeddedResourceConfigurationOptions options, System.String environment)
+    method virtual System.Void Load()
+  type Xamarinme.EmbeddedResourceConfigurationSource : class
+    ctor .ctor()
+    method Microsoft.Extensions.Configuration.IConfigurationProvider Build(Microsoft.Extensions.Configuration.IConfigurationBuilder builder)
+    property System.String Environment { get; set; }
+    property Xamarinme.EmbeddedResourceConfigurationOptions Options { get; set; }
+
+assembly Xamarinme.Hosting
+  type Xamarinme.IXamarinHostEnvironment : interface
+    property System.String Environment { get; }
+  type Xamarinme.XamarinHostBuilder : sealed class
+    method Microsoft.Extensions.Hosting.IHost Build()
+    method static Xamarinme.XamarinHostBuilder CreateDefault(Xamarinme.EmbeddedResourceConfigurationOptions configurationOptions)
+    property Microsoft.Extensions.DependencyInjection.IServiceCollection Services { get; }
+    property Microsoft.Extensions.Logging.ILoggingBuilder Logging { get; }
+    property Xamarinme.IXamarinHostEnvironment HostEnvironment { get; }
+    property Xamarinme.XamarinHostConfiguration Configuration { get; }
+  type Xamarinme.XamarinHostConfiguration : class
+    ctor .ctor()
+    method Microsoft.Extensions.Configuration.IConfigurationBuilder Add(Microsoft.Extensions.Configuration.IConfigurationSource source)
+    method Microsoft.Extensions.Configuration.IConfigurationRoot Build()
+    method Microsoft.Extensions.Configuration.IConfigurationSection GetSection(System.String key)
+    method Microsoft.Extensions.Primitives.IChangeToken GetReloadToken()
+    method System.Void Dispose()
+    method System.Void Reload()
+    property System.String Item { get; set; }
+  type XamarinmeHosting.XamarinHost : sealed class
+    method System.Threading.Tasks.Task StartAsync(System.Threading.CancellationToken cancellationToken = null)
+    method System.Threading.Tasks.Task StopAsync(System.Threading.CancellationToken cancellationToken = null)
+    method System.Void Dispose()
+    property System.IServiceProvider Services { get; }
+
+assembly Xamarinme.WebHostPatch
+  type Microsoft.AspNetCore.Hosting.WebHostExtensionsPatch : static class
+    method static System.Threading.Tasks.Task RunPatchedAsync(Microsoft.AspNetCore.Hosting.IWebHost host, System.Threading.CancellationToken token = null)
+    method static System.Void RunPatched(Microsoft.AspNetCore.Hosting.IWebHost host)
+    method static System.Void ShutdownPatched(Microsoft.AspNetCore.Hosting.IWebHost host)
+  type Microsoft.Extensions.Hosting.Internal.ConsoleLifetimePatch : class
+    ctor .ctor(Microsoft.Extensions.Options.IOptions<Microsoft.Extensions.Hosting.ConsoleLifetimeOptions> options, Microsoft.Extensions.Hosting.IHostEnvironment environment, Microsoft.Extensions.Hosting.IHostApplicationLifetime applicationLifetime, Microsoft.Extensions.Options.IOptions<Microsoft.Extensions.Hosting.HostOptions> hostOptions)
+    ctor .ctor(Microsoft.Extensions.Options.IOptions<Microsoft.Extensions.Hosting.ConsoleLifetimeOptions> options, Microsoft.Extensions.Hosting.IHostEnvironment environment, Microsoft.Extensions.Hosting.IHostApplicationLifetime applicationLifetime, Microsoft.Extensions.Options.IOptions<Microsoft.Extensions.Hosting.HostOptions> hostOptions, Microsoft.Extensions.Logging.ILoggerFactory loggerFactory)
+    method System.Threading.Tasks.Task StopAsync(System.Threading.CancellationToken cancellationToken)
+    method System.Threading.Tasks.Task WaitForStartAsync(System.Threading.CancellationToken cancellationToken)
+    method System.Void Dispose()
+
