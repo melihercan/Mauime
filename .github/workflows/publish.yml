@@ -32,6 +32,10 @@ on:
         description: 'Pack only, do not push to NuGet'
         type: boolean
         default: true
+      skip-duplicate:
+        description: 'Treat "already exists" as success (untick to see the real server response)'
+        type: boolean
+        default: true
 
 concurrency:
   group: publish
@@ -214,14 +218,20 @@ jobs:
         with:
           user: melihercan
 
-      # --skip-duplicate makes a re-run harmless if the version is already published.
-      #
       # The glob is expanded here rather than handed to dotnet as a quoted string. Quoted, bash does
       # not expand it and dotnet nuget push does not either, so the first attempt at publishing
       # failed with "File does not exist (artifacts/*.nupkg)" - after a successful OIDC login, which
       # burns the token. Pushing one file at a time also means the log names each package.
+      #
+      # --skip-duplicate makes a re-run harmless when a version really is already published, but it
+      # is not free: on the first publish of these packages nuget.org answered 409 Conflict for IDs
+      # that existed nowhere - not in the search index, not under the owner account - and
+      # --skip-duplicate turned that rejection into a green tick claiming success. Hence the switch,
+      # so a run can be repeated with the raw server response visible.
       - name: Push to NuGet
         if: github.event_name == 'push' || inputs.dry-run == false
+        env:
+          SKIP_DUPLICATE: ${{ (github.event_name == 'workflow_dispatch' && inputs.skip-duplicate == false) && '' || '1' }}
         run: |
           set -euo pipefail
           shopt -s nullglob
@@ -237,7 +247,8 @@ jobs:
             dotnet nuget push "$package" \
               --api-key "${{ steps.login.outputs.NUGET_API_KEY }}" \
               --source https://api.nuget.org/v3/index.json \
-              --skip-duplicate
+              ${SKIP_DUPLICATE:+--skip-duplicate} \
+              -v detailed
           done
 
       - name: Dry run summary
