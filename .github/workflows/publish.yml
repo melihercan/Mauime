@@ -231,7 +231,10 @@ jobs:
       - name: Push to NuGet
         if: github.event_name == 'push' || inputs.dry-run == false
         env:
-          SKIP_DUPLICATE: ${{ (github.event_name == 'workflow_dispatch' && inputs.skip-duplicate == false) && '' || '1' }}
+          # Both branches are non-empty strings on purpose. GitHub's "condition && a || b" idiom
+          # silently returns b whenever a is falsy, and '' is falsy, so a branch of '' can never win.
+          SKIP_DUPLICATE: ${{ (github.event_name == 'workflow_dispatch' && inputs.skip-duplicate == false) && 'no' || 'yes' }}
+          NUGET_API_KEY: ${{ steps.login.outputs.NUGET_API_KEY }}
         run: |
           set -euo pipefail
           shopt -s nullglob
@@ -242,13 +245,37 @@ jobs:
             exit 1
           fi
 
+          skip=()
+          if [ "$SKIP_DUPLICATE" = "yes" ]; then
+            skip=(--skip-duplicate)
+          fi
+          echo "skip-duplicate: $SKIP_DUPLICATE"
+
           for package in "${packages[@]}"; do
             echo "Pushing $package"
-            dotnet nuget push "$package" \
-              --api-key "${{ steps.login.outputs.NUGET_API_KEY }}" \
-              --source https://api.nuget.org/v3/index.json \
-              ${SKIP_DUPLICATE:+--skip-duplicate} \
-              -v detailed
+
+            if dotnet nuget push "$package" \
+                 --api-key "$NUGET_API_KEY" \
+                 --source https://api.nuget.org/v3/index.json \
+                 "${skip[@]}"; then
+              continue
+            fi
+
+            # dotnet nuget push reports the status line and throws the response body away, which is
+            # where nuget.org puts the reason. Ask again with curl purely to read that body, then
+            # fail. This can itself publish if the original failure was client-side; the log makes
+            # clear which request did what.
+            echo "::group::Raw nuget.org response for $package"
+            curl -sS -X PUT \
+              -H "X-NuGet-ApiKey: $NUGET_API_KEY" \
+              -F "package=@$package" \
+              -D - \
+              -w '\nHTTP %{http_code}\n' \
+              https://www.nuget.org/api/v2/package || true
+            echo "::endgroup::"
+
+            echo "::error::Pushing $package failed; see the raw response above."
+            exit 1
           done
 
       - name: Dry run summary
