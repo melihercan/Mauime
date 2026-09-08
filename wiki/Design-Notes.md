@@ -4,7 +4,7 @@ Why the repository looks the way it does, and the invariants any change must pre
 
 ## The governing constraint is the opposite of Blazorme's
 
-The `Toolkit.Mauime.*` package IDs are **new**. Nothing on nuget.org resolves them, so there are no
+The `Melihercan.Mauime.*` package IDs are **new**. Nothing on nuget.org resolves them, so there are no
 consumers and no additive-only guarantee. The API is free to be fixed properly — `CrossNfc.Current`
 can become DI registration, a hand-wired `MainActivity.OnNewIntent` can become
 `ConfigureLifecycleEvents`, and a dead 2017 dependency can come out of the public surface.

@@ -304,5 +304,5 @@ Windows — `dotnet workload restore Mauime.slnx`, `dotnet restore`, `dotnet bui
 `dotnet test` — which passed clean. Treat the first CI run as the real test of the file.
 
 Publishing is not set up. It needs the package versions and metadata that have not been written, and
-a NuGet Trusted Publishing policy scoped to `Toolkit.Mauime.*` and bound to this repository. Keep publishing
+a NuGet Trusted Publishing policy scoped to `Melihercan.Mauime.*` and bound to this repository. Keep publishing
 in a single `publish.yml`: a policy binds to one workflow file.
