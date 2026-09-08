@@ -381,11 +381,25 @@ decision is not to deprecate.
 - **Platform-agnostic tests only.** Unit tests for the shared slices plus the metadata API baseline;
   no device test harness.
 
+## Settled, and not to be reopened
+
+- **`26.9.8` is the version.** Date-based, matching Blazorme and Utilme. Publishing it closes the
+  door on ever shipping a `1.x`, and that was weighed and accepted.
+- **`Mauime.*` targets .NET 10 only.** No reaching back to `net8.0` or `net9.0`. MAUI apps on older
+  .NET cannot use these packages, which is a deliberate limit rather than an oversight — there are
+  no consumers to strand, and `Mauime.WebHostPatch` would need ASP.NET Core 8/9 rather than 10.
+- **The `Xamarinme.*` packages stay on nuget.org as they are**, and are not deprecated. See Phase 5
+  for why `Blazorme.TestHost` is not a precedent for rescuing them.
+- **No PC/SC.** Mac Catalyst and Windows throw `PlatformNotSupportedException` rather than pulling
+  in three `PCSC` packages for an external USB reader.
+
 ## What is still open
 
-- **Whether "no deprecations" survives the Kestrel advisory.** The decision was taken before the
-  critical CVE in `Xamarinme.WebHostPatch`'s dependency tree was known.
-- **`NdefLibrary` in the public API.** A 2017 `netstandard1.4`-only package, returned by
-  `INfc.ReadNdefAsync()`. New package IDs mean it can be replaced; that costs a package decision.
-- **Porting `Mauime.Nfc` needs new package references** — PCSC 7.0.1 and whatever replaces
-  NdefLibrary — which will be asked for, not assumed.
+- **The demo app.** One MAUI project to replace Xamarinme's three Xamarin.Forms
+  solutions-in-a-solution across 17 projects. It is also the only thing that would exercise
+  `Mauime.Nfc`'s Android and iOS implementations, which have no behavioural coverage at all, and it
+  is what forces a macOS CI job.
+- **Publishing.** A single `publish.yml` and a NuGet Trusted Publishing policy scoped to `Mauime.*`
+  and bound to this repository. The repository does not exist on GitHub yet — there is no remote.
+- **The first CI run.** `ci.yml` has never executed on a runner; only its command sequence has been
+  verified, locally.

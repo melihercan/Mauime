@@ -231,11 +231,19 @@ temporary type exposing `Android.Nfc.NfcAdapter`, `CoreNFC.NFCNdefReaderSession`
 
 ## Decisions already taken
 
+These are settled. Do not reopen them without being asked.
+
 - Fresh git history; Xamarinme's 153 commits are not carried over.
 - **All four libraries are ported.** The recommendation was `Mauime.Nfc` alone; the decision was to
-  port all four. `Mauime.WebHostPatch` therefore becomes a Kestrel-in-MAUI convenience layer, not a
+  port all four. `Mauime.WebHostPatch` therefore became a Kestrel-in-MAUI convenience layer, not a
   fork of Microsoft code — both of the original patches' causes are gone on .NET 10.
-- No deprecations on nuget.org. (Taken before the Kestrel advisory was known; still open.)
+- **`26.9.8`, date-based**, matching Blazorme and Utilme. Publishing it rules out ever shipping a
+  `1.x`; that was weighed and accepted.
+- **.NET 10 only.** No `net8.0`/`net9.0` slices. MAUI apps on older .NET cannot use these packages,
+  deliberately — there are no consumers to strand, and `Mauime.WebHostPatch` would need ASP.NET Core
+  8/9 rather than 10.
+- **No deprecations on nuget.org.** The `Xamarinme.*` packages stay exactly as they are.
+- **No PC/SC**, so Mac Catalyst and Windows throw `PlatformNotSupportedException` for NFC.
 - Platform-agnostic unit tests plus the metadata baseline. No device test harness.
 
 ## Working agreements
