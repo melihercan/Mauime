@@ -1,8 +1,0 @@
-<Solution>
-  <Project Path="DemoApp/DemoApp.csproj" />
-  <Project Path="Mauime.Configuration/Mauime.Configuration.csproj" />
-  <Project Path="Mauime.Hosting/Mauime.Hosting.csproj" />
-  <Project Path="Mauime.Nfc/Mauime.Nfc.csproj" />
-  <Project Path="Mauime.Tests/Mauime.Tests.csproj" />
-  <Project Path="Mauime.WebHostPatch/Mauime.WebHostPatch.csproj" />
-</Solution>

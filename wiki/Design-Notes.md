@@ -4,7 +4,7 @@ Why the repository looks the way it does, and the invariants any change must pre
 
 ## The governing constraint is the opposite of Blazorme's
 
-The `Melihercan.Mauime.*` package IDs are **new**. Nothing on nuget.org resolves them, so there are no
+The `Me.Toolkit.Maui.*` package IDs are **new**. Nothing on nuget.org resolves them, so there are no
 consumers and no additive-only guarantee. The API is free to be fixed properly — `CrossNfc.Current`
 can become DI registration, a hand-wired `MainActivity.OnNewIntent` can become
 `ConfigureLifecycleEvents`, and a dead 2017 dependency can come out of the public surface.
@@ -16,7 +16,7 @@ a diff to review in the commit that causes it.
 ## The API baseline
 
 `PublicApiSurfaceTests` renders every public type, member signature, generic arity, enum numeric
-value, `const` literal and default parameter value into `Mauime.Tests/PublicApi.approved.txt`.
+value, `const` literal and default parameter value into `Me.Toolkit.Maui.Tests/PublicApi.approved.txt`.
 
 It reads **metadata only**, through `MetadataLoadContext` over the built assemblies, rather than
 referencing the projects. In Blazorme that was because two libraries targeted `net5.0`. Here it is
@@ -29,7 +29,7 @@ port. It did.
 When a change is intentional, review the diff and copy `PublicApi.received.txt` from the test output
 directory over `PublicApi.approved.txt`, in the same commit. Never weaken the assertion.
 
-The baseline renders each Mauime library from its **`net10.0`** slice only. Dumping all five slices
+The baseline renders each Me.Toolkit.Maui library from its **`net10.0`** slice only. Dumping all five slices
 would make the approved file four times longer and mostly repetition, so `MultiTargetingTests` holds
 the platform slices to the neutral one instead: same public surface, every framework. An
 Android-only member added by accident — the easy mistake when half a plugin lives behind
@@ -42,7 +42,7 @@ Two things make reading a platform slice work at all:
   different worlds, and an Android `System.Runtime` and an iOS `System.Runtime` cannot share a
   resolver that matches on simple name. A single shared context silently resolves types out of
   whichever pack was enumerated first.
-- **`Mauime.ReferencePaths.txt`**, written beside every assembly by `Directory.Build.targets`. A
+- **`Me.Toolkit.Maui.ReferencePaths.txt`**, written beside every assembly by `Directory.Build.targets`. A
   library build does not copy its dependencies, so `Mono.Android`, `Microsoft.iOS` and the rest are
   nowhere near `bin/`. Guessing at the workload's reference-assembly folders would be a proxy;
   the `ReferencePath` item is what the compiler was actually handed.
@@ -64,27 +64,27 @@ It was originally replaced for a blunter reason: `legacy/WebHostPatch` dropped a
 shadowing the real assembly, so the version the metadata asked for was nowhere on disk and the
 baseline threw `FileNotFoundException`. That fork is gone; the resolver stays on its own merits.
 
-A slice resolves only against its own `Mauime.ReferencePaths.txt`, with nothing from the host
+A slice resolves only against its own `Me.Toolkit.Maui.ReferencePaths.txt`, with nothing from the host
 runtime mixed in, so an Android slice takes `System.Runtime` from the Android ref pack rather than
 from whatever runtime the tests happen to be running on.
 
-## The shape of a Mauime library
+## The shape of a Me.Toolkit.Maui library
 
 All four are the same shape, and the shape was settled by building rather than by reading:
 
 - **`Microsoft.Maui.Core`, not `Microsoft.Maui.Controls`.** Core carries `MauiAppBuilder`, the
   `LifecycleEvents` builders and `Microsoft.Maui.ApplicationModel`. `Microsoft.Maui.Essentials` has
   none of the first two. An NFC plugin has no business depending on Controls, and now does not.
-- **`Mauime.WebHostPatch` takes ASP.NET Core as netstandard2.0 packages**, never the
+- **`Me.Toolkit.Maui.WebHostPatch` takes ASP.NET Core as netstandard2.0 packages**, never the
   `Microsoft.AspNetCore.App` framework reference — that framework has no mobile runtime pack.
 - **`net10.0` alongside the four platform frameworks.** It is what a non-platform project resolves,
-  and for `Mauime.Nfc` it is where "this platform has no implementation" lives — the role
+  and for `Me.Toolkit.Maui.Nfc` it is where "this platform has no implementation" lives — the role
   `Xamarinme.Nfc` gave `netstandard2.0`.
 - **`AndroidGenerateResourceDesigner=false`.** Android otherwise generates a public `Resource` class
   into every library, resources or not, and it lands in the package's public surface.
 
-The target framework list lives once, as `$(MauimeTargetFrameworks)` in `Directory.Build.props`,
-which also turns on documentation generation for the four `Mauime.*` projects — so CS1591 requires
+The target framework list lives once, as `$(MeToolkitMauiTargetFrameworks)` in `Directory.Build.props`,
+which also turns on documentation generation for the four `Me.Toolkit.Maui.*` projects — so CS1591 requires
 every public member to be documented.
 
 ## What each library is, and what MAUI already does
@@ -93,7 +93,7 @@ The first question, per library, was whether it should exist at all. Verified ra
 a `net10.0-android` probe project was built to check the MAUI API, and the imported Xamarin projects
 were built to check what still compiled.
 
-### `Xamarinme.Hosting` → `Mauime.Hosting`, ported and much smaller
+### `Xamarinme.Hosting` → `Me.Toolkit.Maui.Hosting`, ported and much smaller
 
 `XamarinHostBuilder` exposed Configuration, Services, HostEnvironment and Logging, and a `Build()`.
 `MauiAppBuilder` exposes the same, member for member. `XamarinHostConfiguration` is a copy of
@@ -102,7 +102,7 @@ Blazor's `WebAssemblyHostConfiguration`; `ConfigurationManager` is the maintaine
 did.
 
 So the only gap is that MAUI's environment always reports `Production`. That is what
-`Mauime.Hosting` fills, and it is the whole library.
+`Me.Toolkit.Maui.Hosting` fills, and it is the whole library.
 
 **It wraps rather than assigns**, because `MauiHostEnvironment.EnvironmentName` throws
 `NotImplementedException` from its setter. The interface declares the property as settable and the
@@ -113,13 +113,13 @@ registration got this wrong, and a test caught it. Everything but the name is de
 `XamarinHost` did not come across at all: it implemented `IHost` and threw
 `NotImplementedException` from both `StartAsync` and `StopAsync`.
 
-### `Xamarinme.Configuration` → `Mauime.Configuration`, ported
+### `Xamarinme.Configuration` → `Me.Toolkit.Maui.Configuration`, ported
 
 Two ways in — `AddAppPackageJson` for a `MauiAsset`, `AddEmbeddedResourceJson` for the embedded
 resource Xamarinme used — both layering `appsettings.{environment}.json` over the base file.
 
 **The parser is Microsoft's, referenced not vendored.** This is the opposite call from
-`Mauime.Nfc`'s, and deliberately: NdefLibrary was a dead 2017 package sitting in the public API,
+`Me.Toolkit.Maui.Nfc`'s, and deliberately: NdefLibrary was a dead 2017 package sitting in the public API,
 while `Microsoft.Extensions.Configuration.Json` is a live first-party component. Reimplementing it
 to keep a zero-dependency badge would have been the same vendoring mistake Xamarinme made, in newer
 clothes. MAUI does not reference it, which is the one thing this package supplies that an app could
@@ -137,7 +137,7 @@ out of `Build()` — or, for a wrong prefix, into an empty configuration and no 
 reference-assembly stub and throws, so what is untested is the four lines that open the asset; both
 paths funnel into the same layering code.
 
-### `Xamarinme.WebHostPatch` → `Mauime.WebHostPatch`, with no patch in it
+### `Xamarinme.WebHostPatch` → `Me.Toolkit.Maui.WebHostPatch`, with no patch in it
 
 The two forks existed for two Mono-era problems, and **both causes are gone**:
 
@@ -182,13 +182,13 @@ one ([GHSA-prrf-397v-83xh](https://github.com/advisories/GHSA-prrf-397v-83xh), I
 Primitives shadows the real assembly for anything sharing an output directory — which is why this
 repository needs two test projects.
 
-### `Xamarinme.Nfc` → `Mauime.Nfc`, ported
+### `Xamarinme.Nfc` → `Me.Toolkit.Maui.Nfc`, ported
 
 MAUI has no NFC support, so this is the library the port was actually for. It was never published,
 so there was not even an old version to stay compatible with — which is why the API is smaller than
 what it replaced rather than a translation of it.
 
-**`INfc` is the surface**, resolved from DI after `builder.UseMauimeNfc()`. Every implementation is
+**`INfc` is the surface**, resolved from DI after `builder.UseMeToolkitMauiNfc()`. Every implementation is
 `internal`, which is what allows `MultiTargetingTests` to hold all five slices to one public API.
 Gone: `CrossNfc.Current` (a 2019 static locator), the per-platform public `Nfc` classes, the unused
 `NfcTagStatus`, and the `Nfc.OnNewIntent(intent)` call consumers had to add to their own
@@ -197,7 +197,7 @@ Gone: `CrossNfc.Current` (a 2019 static locator), the per-platform public `Nfc` 
 **The NDEF types are ours.** `NdefLibrary` 4.1.0 was verified to restore, compile and run on
 .NET 10, so dropping it was a choice rather than a forced move: it is a 2017 package with a
 netstandard1.4 asset only, and it was in the *public* API, since `ReadNdefAsync` returned its
-`NdefMessage`. `Mauime.Nfc` has no third-party dependencies at all.
+`NdefMessage`. `Me.Toolkit.Maui.Nfc` has no third-party dependencies at all.
 
 The codec is pinned against NdefLibrary's own output. Every byte vector in `NdefTests` was captured
 by running NdefLibrary 4.1.0 and recording what it emitted, because the port's real risk is a codec
@@ -213,7 +213,7 @@ Platform sources are selected by **explicit `Compile Include` conditions**. The 
 convention is an app thing; in a class library those files compile into every target framework,
 which was checked rather than assumed.
 
-### The gap in Mauime.Nfc's coverage
+### The gap in Me.Toolkit.Maui.Nfc's coverage
 
 **Neither platform implementation has behavioural coverage.** A net10.0 test project resolves the
 net10.0 slice, which is the one with no implementation, so nothing exercises `AndroidNfc` or
@@ -242,7 +242,7 @@ on.
 
 ## Environment facts worth not rediscovering
 
-- The .NET 10 SDK's `dotnet new sln` produces **`Mauime.slnx`**, not a classic `.sln`. The API
+- The .NET 10 SDK's `dotnet new sln` produces **`Me.Toolkit.Maui.slnx`**, not a classic `.sln`. The API
   baseline finds the repository root by that exact file name.
 - The MAUI workloads present here are `android`, `ios`, `maccatalyst` and `maui-windows`. A
   `net10.0-android` MAUI app builds clean in about 20 seconds.

@@ -11,8 +11,8 @@
 
     Not applied to legacy/, which has its own empty Directory.Build.targets.
   -->
-  <Target Name="MauimeWriteReferencePaths" AfterTargets="ResolveReferences">
-    <WriteLinesToFile File="$(TargetDir)Mauime.ReferencePaths.txt"
+  <Target Name="MeToolkitMauiWriteReferencePaths" AfterTargets="ResolveReferences">
+    <WriteLinesToFile File="$(TargetDir)Me.Toolkit.Maui.ReferencePaths.txt"
                       Lines="@(ReferencePath)"
                       Overwrite="true"
                       WriteOnlyWhenDifferent="true" />

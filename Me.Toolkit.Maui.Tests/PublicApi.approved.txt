@@ -1,0 +1,71 @@
+assembly Me.Toolkit.Maui.Configuration
+  type Me.Toolkit.Maui.Configuration.MeToolkitMauiConfigurationExtensions : static class
+    const System.String DefaultFileName = "appsettings.json"
+    method static Microsoft.Extensions.Configuration.IConfigurationBuilder AddAppPackageJson(Microsoft.Extensions.Configuration.IConfigurationBuilder builder, System.String fileName = "appsettings.json", System.String environment = null, System.Boolean optional = true)
+    method static Microsoft.Extensions.Configuration.IConfigurationBuilder AddEmbeddedResourceJson(Microsoft.Extensions.Configuration.IConfigurationBuilder builder, System.Reflection.Assembly assembly, System.String prefix, System.String fileName = "appsettings.json", System.String environment = null, System.Boolean optional = true)
+    method static System.String EnvironmentFileName(System.String fileName, System.String environment)
+
+assembly Me.Toolkit.Maui.Hosting
+  type Me.Toolkit.Maui.Hosting.MeToolkitMauiHostingExtensions : static class
+    const System.String DefaultConfigurationKey = "MAUI_ENVIRONMENT"
+    method static Microsoft.Maui.Hosting.MauiAppBuilder UseMeToolkitMauiHosting(Microsoft.Maui.Hosting.MauiAppBuilder builder, System.String environmentName)
+    method static Microsoft.Maui.Hosting.MauiAppBuilder UseMeToolkitMauiHostingFromConfiguration(Microsoft.Maui.Hosting.MauiAppBuilder builder, System.String key = "MAUI_ENVIRONMENT")
+
+assembly Me.Toolkit.Maui.Nfc
+  type Me.Toolkit.Maui.Nfc.INfc : interface
+    event System.EventHandler<Me.Toolkit.Maui.Nfc.NfcTagDetectedEventArgs> TagDetected
+    event System.EventHandler<System.EventArgs> SessionTimeout
+    method System.Threading.Tasks.Task DisableSessionAsync()
+    method System.Threading.Tasks.Task EnableSessionAsync()
+    method System.Threading.Tasks.Task WriteNdefAsync(Me.Toolkit.Maui.Nfc.NdefMessage ndefMessage)
+    method System.Threading.Tasks.Task<Me.Toolkit.Maui.Nfc.NdefMessage> ReadNdefAsync()
+    method System.Threading.Tasks.Task<Me.Toolkit.Maui.Nfc.NdefMessage> WriteReadNdefAsync(Me.Toolkit.Maui.Nfc.NdefMessage ndefMessage)
+  type Me.Toolkit.Maui.Nfc.MeToolkitMauiNfcExtensions : static class
+    method static Microsoft.Maui.Hosting.MauiAppBuilder UseMeToolkitMauiNfc(Microsoft.Maui.Hosting.MauiAppBuilder builder)
+  type Me.Toolkit.Maui.Nfc.NdefMessage : sealed class
+    ctor .ctor(Me.Toolkit.Maui.Nfc.NdefRecord[] records)
+    ctor .ctor(System.Collections.Generic.IEnumerable<Me.Toolkit.Maui.Nfc.NdefRecord> records)
+    method System.Byte[] ToByteArray()
+    method System.Collections.Generic.IEnumerator<Me.Toolkit.Maui.Nfc.NdefRecord> GetEnumerator()
+    method static Me.Toolkit.Maui.Nfc.NdefMessage FromByteArray(System.ReadOnlySpan<System.Byte> bytes)
+    property Me.Toolkit.Maui.Nfc.NdefRecord Item { get; }
+    property System.Int32 Count { get; }
+  type Me.Toolkit.Maui.Nfc.NdefRecord : sealed class
+    ctor .ctor(Me.Toolkit.Maui.Nfc.NdefTypeNameFormat typeNameFormat, System.ReadOnlyMemory<System.Byte> type = null, System.ReadOnlyMemory<System.Byte> payload = null, System.ReadOnlyMemory<System.Byte> id = null)
+    property Me.Toolkit.Maui.Nfc.NdefTypeNameFormat TypeNameFormat { get; }
+    property System.ReadOnlyMemory<System.Byte> Id { get; }
+    property System.ReadOnlyMemory<System.Byte> Payload { get; }
+    property System.ReadOnlyMemory<System.Byte> Type { get; }
+    property static Me.Toolkit.Maui.Nfc.NdefRecord Empty { get; }
+  type Me.Toolkit.Maui.Nfc.NdefTypeNameFormat : enum System.Byte
+    Empty = 0
+    NfcWellKnown = 1
+    Mime = 2
+    AbsoluteUri = 3
+    NfcExternal = 4
+    Unknown = 5
+    Unchanged = 6
+    Reserved = 7
+  type Me.Toolkit.Maui.Nfc.NfcTagDetectedEventArgs : sealed class
+    ctor .ctor(System.String tagId, Me.Toolkit.Maui.Nfc.NdefMessage ndefMessage)
+    property Me.Toolkit.Maui.Nfc.NdefMessage NdefMessage { get; }
+    property System.String TagId { get; }
+
+assembly Me.Toolkit.Maui.WebHostPatch
+  type Me.Toolkit.Maui.WebHostPatch.IMeToolkitMauiWebHost : interface
+    method System.Threading.Tasks.Task StopAsync(System.Threading.CancellationToken cancellationToken = null)
+    method System.Threading.Tasks.Task<System.Uri> StartAsync(System.Threading.CancellationToken cancellationToken = null)
+    property System.Boolean IsRunning { get; }
+    property System.Uri Address { get; }
+  type Me.Toolkit.Maui.WebHostPatch.MeToolkitMauiWebHostExtensions : static class
+    method static Microsoft.Maui.Hosting.MauiAppBuilder UseMeToolkitMauiWebHost(Microsoft.Maui.Hosting.MauiAppBuilder builder, System.Action<Me.Toolkit.Maui.WebHostPatch.MeToolkitMauiWebHostOptions> configure = null)
+  type Me.Toolkit.Maui.WebHostPatch.MeToolkitMauiWebHostOptions : sealed class
+    ctor .ctor()
+    property System.Action<Microsoft.AspNetCore.Builder.IApplicationBuilder> ConfigureApplication { get; set; }
+    property System.Action<Microsoft.AspNetCore.Hosting.IWebHostBuilder> ConfigureBuilder { get; set; }
+    property System.Boolean ListenOnAllInterfaces { get; set; }
+    property System.Int32 Port { get; set; }
+    property System.String ContentRootPath { get; set; }
+  type Me.Toolkit.Maui.WebHostPatch.NetworkAddress : static class
+    method static System.Net.IPAddress GetLocalAddress()
+

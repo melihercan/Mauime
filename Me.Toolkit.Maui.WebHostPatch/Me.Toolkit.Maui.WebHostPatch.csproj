@@ -1,0 +1,56 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(MeToolkitMauiTargetFrameworks)</TargetFrameworks>
+    <UseMauiCore>true</UseMauiCore>
+    <SingleProject>true</SingleProject>
+    <AssemblyName>Me.Toolkit.Maui.WebHostPatch</AssemblyName>
+    <RootNamespace>Me.Toolkit.Maui.WebHostPatch</RootNamespace>
+    <PackageId>Me.Toolkit.Maui.WebHostPatch</PackageId>
+    <Version>26.09.08</Version>
+    <Product>Me.Toolkit.Maui.WebHostPatch</Product>
+    <Description>Run an ASP.NET Core web host and Kestrel server inside a .NET MAUI app: start it, stop it, and find out what address to show the user.
+ASP.NET Core comes from netstandard2.0 packages, which is what lets it run on Android and iOS: the Microsoft.AspNetCore.App shared framework has no runtime pack for any mobile platform. Despite the name there are no patches left in it.</Description>
+    <PackageTags>maui kestrel aspnetcore webhost server</PackageTags>
+    <PackageReleaseNotes>First release. Replaces Xamarinme.WebHostPatch 1.0.0.
+The approach is unchanged, because it is the only one that works: ASP.NET Core as netstandard2.0 packages, copied into the app like any assembly. The Microsoft.AspNetCore.App shared framework ships no runtime pack for android, ios or maccatalyst, so a framework reference compiles a library and then fails the consuming app with NETSDK1082.
+What changed is the version and the patching. The packages are the 2.3.x servicing line rather than 2.2.0, which means no known advisories - 2.2.0 carries a critical one in Microsoft.AspNetCore.Server.Kestrel.Core (GHSA-5rrx-jjjq-q2r5) and a moderate one in Microsoft.AspNetCore.Server.IIS (GHSA-prrf-397v-83xh).
+Both of Xamarinme's forks of Microsoft's code are gone. The vendored Microsoft.Extensions.Primitives, stamped 5.9.0.0 to outrank the real assembly, existed because Microsoft.Net.Http.Headers 2.2.0 called an InplaceStringBuilder that Primitives 5.0 had deleted; 2.3.11 no longer references that type. The WebHostExtensions fork existed because Console.CancelKeyPress threw on Mono; that call lives in RunAsync, and this starts and stops the host explicitly instead, which is what an app wants anyway. The generic host's ConsoleLifetime is not involved either.
+IMeToolkitMauiWebHost starts and stops an IWebHost on Kestrel and reports the address it bound to, read from the server rather than from the options, so a port of 0 reports the port the operating system chose. Listening on every interface reports the machine's LAN address rather than 0.0.0.0.
+NetworkAddress.GetLocalAddress replaces the Xamarinme demo's NetworkHelper, with its bug fixed: that version picked the first qualifying interface and only then filtered its addresses, so a machine whose first interface held only a link-local address reported none at all.
+Worth knowing if you are upgrading: Xamarinme.WebHostPatch 1.0.0 pins ASP.NET Core 2.2.0, which carries a critical advisory in Microsoft.AspNetCore.Server.Kestrel.Core (GHSA-5rrx-jjjq-q2r5) and a moderate one in Microsoft.AspNetCore.Server.IIS (GHSA-prrf-397v-83xh). Its forked Primitives also shadows the real assembly for anything sharing an output directory.</PackageReleaseNotes>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      Microsoft.Maui.Core, not Microsoft.Maui.Controls: Core carries MauiAppBuilder, the
+      LifecycleEvents builders and Microsoft.Maui.ApplicationModel, which is everything these
+      libraries need. Microsoft.Maui.Essentials alone is not enough - it has none of them.
+      Since .NET 8 the UseMaui* properties no longer add the package reference implicitly (MA002).
+    -->
+    <PackageReference Include="Microsoft.Maui.Core" Version="$(MauiVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      ASP.NET Core as netstandard2.0 packages, which is the only route that works on a mobile
+      platform. The Microsoft.AspNetCore.App *framework* has no runtime pack for android, ios or
+      maccatalyst - those RIDs 404 on nuget.org - so a framework reference builds a library happily
+      and then fails the consuming app with NETSDK1082. A netstandard2.0 package is just an assembly
+      and gets copied in like any other.
+
+      That is exactly what Xamarinme.WebHostPatch did, and why it worked. What changes is the
+      version: 2.3.x is the maintained servicing line, and it is advisory-clean, where 2.2.0 carries
+      a critical Kestrel advisory (GHSA-5rrx-jjjq-q2r5) and a moderate IIS one.
+    -->
+    <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel" Version="2.3.12" />
+    <PackageReference Include="Microsoft.AspNetCore.Hosting" Version="2.3.11" />
+  </ItemGroup>
+
+
+  <!-- So the address-selection rules can be tested without a device. See NetworkAddress. -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="Me.Toolkit.Maui.Tests" />
+  </ItemGroup>
+
+</Project>

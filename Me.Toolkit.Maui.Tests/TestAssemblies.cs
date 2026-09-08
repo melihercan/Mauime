@@ -1,0 +1,123 @@
+using System.Reflection;
+
+namespace Me.Toolkit.Maui.Tests;
+
+/// <summary>
+/// Locates built assemblies on disk so the public-API baseline can read them without referencing
+/// them.
+///
+/// That indirection is not a style choice. The libraries multi-target the MAUI platform frameworks —
+/// net10.0-android, net10.0-ios, net10.0-maccatalyst, net10.0-windows10.0.19041.0 — and a plain
+/// net10.0 test project cannot reference any of them. Reading metadata is the only way to cover the
+/// platform slices at all.
+/// </summary>
+internal static class TestAssemblies
+{
+    /// <summary>The libraries, in baseline order.</summary>
+    internal static readonly string[] LibraryNames =
+    [
+        "Me.Toolkit.Maui.Configuration",
+        "Me.Toolkit.Maui.Hosting",
+        "Me.Toolkit.Maui.Nfc",
+        "Me.Toolkit.Maui.WebHostPatch",
+    ];
+
+    /// <summary>
+    /// The framework the baseline renders a library from. The platform slices are held to this one
+    /// by <see cref="MultiTargetingTests"/> rather than being dumped four more times.
+    /// </summary>
+    internal const string NeutralTargetFramework = "net10.0";
+
+    internal static string RepositoryRoot { get; } = FindRepositoryRoot();
+
+    /// <summary>The build configuration this test run was compiled in, e.g. "Debug".</summary>
+    internal static string Configuration { get; } =
+        typeof(TestAssemblies).Assembly
+            .GetCustomAttribute<AssemblyConfigurationAttribute>()?.Configuration ?? "Debug";
+
+    private static string FindRepositoryRoot()
+    {
+        var dir = new DirectoryInfo(Path.GetDirectoryName(typeof(TestAssemblies).Assembly.Location)!);
+        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "Me.Toolkit.Maui.slnx")))
+        {
+            dir = dir.Parent;
+        }
+
+        return dir?.FullName
+            ?? throw new InvalidOperationException("Could not locate Me.Toolkit.Maui.slnx above the test assembly.");
+    }
+
+    /// <summary>Every assembly the baseline covers, rendered from its neutral slice.</summary>
+    internal static IEnumerable<(string Name, string Path)> Baseline() =>
+        LibraryNames.Select(n => (n, LocateDll(n, NeutralTargetFramework)));
+
+    /// <summary>The target frameworks a library was actually built for, read from bin.</summary>
+    internal static IReadOnlyList<string> BuiltTargetFrameworks(string assemblyName)
+    {
+        var bin = Path.Combine(RepositoryRoot, assemblyName, "bin", Configuration);
+
+        if (!Directory.Exists(bin))
+        {
+            throw new DirectoryNotFoundException(
+                $"'{bin}' does not exist. Build the whole solution first: dotnet build Me.Toolkit.Maui.slnx");
+        }
+
+        var frameworks = Directory.GetDirectories(bin)
+            .Where(d => File.Exists(Path.Combine(d, assemblyName + ".dll")))
+            .Select(d => Path.GetFileName(d)!)
+            .OrderBy(f => f, StringComparer.Ordinal)
+            .ToList();
+
+        return frameworks.Count > 0
+            ? frameworks
+            : throw new FileNotFoundException($"No build of {assemblyName}.dll found under '{bin}'.");
+    }
+
+    /// <summary>One library, built for one specific target framework.</summary>
+    internal static string LocateDll(string assemblyName, string targetFramework)
+    {
+        var path = Path.Combine(RepositoryRoot, assemblyName, "bin", Configuration, targetFramework,
+            assemblyName + ".dll");
+
+        return File.Exists(path)
+            ? path
+            : throw new FileNotFoundException(
+                $"No {targetFramework} build of {assemblyName}.dll. Build the solution first.", path);
+    }
+
+    /// <summary>
+    /// The assemblies a metadata resolver should search when reading <paramref name="dllPath"/>:
+    /// exactly what the compiler was handed, read from the <c>Me.Toolkit.Maui.ReferencePaths.txt</c> that
+    /// <c>Directory.Build.targets</c> writes beside the assembly.
+    ///
+    /// Nothing from the host runtime is mixed in. An android slice must resolve System.Runtime out
+    /// of the Android ref pack, not out of the runtime this test happens to be running on, or the
+    /// two worlds meet and types stop matching.
+    /// </summary>
+    internal static IEnumerable<string> ProbingFiles(string dllPath)
+    {
+        var directory = Path.GetDirectoryName(dllPath)!;
+        var referencePaths = Path.Combine(directory, "Me.Toolkit.Maui.ReferencePaths.txt");
+
+        if (!File.Exists(referencePaths))
+        {
+            throw new FileNotFoundException(
+                $"'{referencePaths}' is missing. Directory.Build.targets writes it beside every "
+                + "assembly; build the solution before running the API baseline.",
+                referencePaths);
+        }
+
+        // bin/<configuration>/<framework>/x.dll, so the project directory is three levels up.
+        // MSBuild writes some entries relative to it — the generated Android resource designer,
+        // for one.
+        var projectDirectory = Directory.GetParent(directory)?.Parent?.Parent?.FullName
+            ?? throw new InvalidOperationException($"'{dllPath}' is not under a bin/<config>/<tfm> path.");
+
+        var references = File.ReadAllLines(referencePaths)
+            .Where(line => !string.IsNullOrWhiteSpace(line))
+            .Select(line => Path.IsPathRooted(line) ? line : Path.Combine(projectDirectory, line))
+            .Where(File.Exists);
+
+        return references.Concat(Directory.GetFiles(directory, "*.dll"));
+    }
+}

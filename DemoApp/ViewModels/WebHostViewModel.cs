@@ -1,4 +1,4 @@
-using Mauime.WebHostPatch;
+using Me.Toolkit.Maui.WebHostPatch;
 using ReactiveUI;
 using ReactiveUI.Primitives;
 using ReactiveUI.Primitives.Advanced;
@@ -15,14 +15,14 @@ namespace DemoApp.ViewModels;
 /// </summary>
 public sealed class WebHostViewModel : ReactiveObject, IDisposable
 {
-    private readonly IMauimeWebHost _host;
+    private readonly IMeToolkitMauiWebHost _host;
     private readonly DisposableBag _subscriptions = new();
 
     private string _status = "Stopped.";
     private string? _address;
     private bool _isRunning;
 
-    public WebHostViewModel(IMauimeWebHost host, ISequencer mainThread)
+    public WebHostViewModel(IMeToolkitMauiWebHost host, ISequencer mainThread)
     {
         _host = host;
 

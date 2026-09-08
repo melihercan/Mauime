@@ -1,0 +1,8 @@
+<Solution>
+  <Project Path="DemoApp/DemoApp.csproj" />
+  <Project Path="Me.Toolkit.Maui.Configuration/Me.Toolkit.Maui.Configuration.csproj" />
+  <Project Path="Me.Toolkit.Maui.Hosting/Me.Toolkit.Maui.Hosting.csproj" />
+  <Project Path="Me.Toolkit.Maui.Nfc/Me.Toolkit.Maui.Nfc.csproj" />
+  <Project Path="Me.Toolkit.Maui.Tests/Me.Toolkit.Maui.Tests.csproj" />
+  <Project Path="Me.Toolkit.Maui.WebHostPatch/Me.Toolkit.Maui.WebHostPatch.csproj" />
+</Solution>

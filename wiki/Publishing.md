@@ -9,7 +9,7 @@ Packaging is done by GitHub Actions, in `.github/workflows/`.
 ## One workflow, on purpose
 
 A NuGet Trusted Publishing policy is bound to a **single workflow file** and a **single repository**,
-so one file means one policy covers every package, every future version, and any future `Melihercan.Mauime.X`
+so one file means one policy covers every package, every future version, and any future `Me.Toolkit.Maui.X`
 package. **Do not split publishing into per-package workflow files** — that would require a policy
 per file.
 
@@ -18,9 +18,9 @@ per file.
 | Trigger | Publishes |
 |---|---|
 | tag `v<version>` | every package |
-| tag `configuration-v<version>` | `Melihercan.Mauime.Configuration` only |
-| tag `hosting-v<version>` | `Melihercan.Mauime.Hosting` only |
-| tag `webhostpatch-v<version>` | `Melihercan.Mauime.WebHostPatch` only |
+| tag `configuration-v<version>` | `Me.Toolkit.Maui.Configuration` only |
+| tag `hosting-v<version>` | `Me.Toolkit.Maui.Hosting` only |
+| tag `webhostpatch-v<version>` | `Me.Toolkit.Maui.WebHostPatch` only |
 | manual run | defaults to a **dry run** that packs and uploads the `.nupkg` files as artifacts without publishing |
 
 The workflow verifies the tag matches each project's `<Version>`, runs the tests, and packs with
@@ -31,23 +31,20 @@ that is already out, and it cannot distinguish that from a refusal — the first
 these packages was rejected three times with `409 The package ID is reserved` and reported success,
 because that is a 409 like any other. Only a manual run can ask for it.
 
-## `Melihercan.Mauime.Nfc` is not published
+## `Me.Toolkit.Maui.Nfc` is not published
 
 It builds, ships in the demo, and has tests — but its reading session is unfinished and has never
 been exercised against a physical tag. The project sets `IsPackable=false`, so a plain
-`dotnet pack` on the solution cannot produce a `Melihercan.Mauime.Nfc.nupkg` by accident; `publish.yml` has no
+`dotnet pack` on the solution cannot produce a `Me.Toolkit.Maui.Nfc.nupkg` by accident; `publish.yml` has no
 `nfc-v*` trigger either. Remove the `IsPackable` line and add the trigger together when it is ready.
 
 It is still **built** by the publish job, because the tests read every library's compiled assemblies
 off disk through `MetadataLoadContext`. Skipping its build fails `PublicApiSurfaceTests` and
 `MultiTargetingTests`, not just its own tests.
 
-## Why the IDs are prefixed
+## Why the name is not Mauime
 
-The packages are `Melihercan.Mauime.*`, while the projects, assemblies and namespaces are `Mauime.*`.
-That mismatch is deliberate, and it is not a style choice.
-
-`Mauime.Configuration` cannot be published. nuget.org rejects it:
+This repository was called Mauime, and the packages were to be `Mauime.*`. They cannot be:
 
 ```
 409 The package ID is reserved. You can upload your package with a different
@@ -63,18 +60,23 @@ case is `Reactor.Maui`, whose project is *called* MauiReactor.
 publish without trouble. Reservations are granted per request, not automatically for every Microsoft
 technology name, and MAUI's was taken when it shipped in 2022.
 
-Only the published ID changes. Consumers install `Melihercan.Mauime.Configuration` and write
-`using Mauime.Configuration;`, which is ordinary for a vendor- or toolkit-prefixed package.
+Only the published ID changes. Consumers install `Me.Toolkit.Maui.Configuration` and write
+`using Me.Toolkit.Maui.Configuration;`, which is ordinary for a vendor- or toolkit-prefixed package.
 
-`Toolkit.*` was tried first and refused the same way: *"This package ID has been reserved. Please
-request access to upload to this reserved namespace from the owner of the reserved prefix."* That
-`Toolkit.Data` and `Toolkit.CodeBase` already exist proves nothing - a reservation blocks only new
-IDs, which is the same reason `Xamarinme.*` survives while `Mauime.*` does not.
+`Toolkit.*` alone was tried next and refused the same way: *"This package ID has been reserved.
+Please request access to upload to this reserved namespace from the owner of the reserved prefix."*
+That `Toolkit.Data` and `Toolkit.CodeBase` already exist proves nothing — a reservation blocks only
+new IDs, which is exactly why `Xamarinme.*` survives while `Mauime.*` does not.
 
-There is no way to query reservations; the only test is a push. So any ordinary English word is a
-gamble, and an identity prefix is the only kind nobody else can hold. `Melihercan.*` is also
-eligible for a prefix reservation of your own, which would give the verified badge on everything
-published under it.
+`Me.Toolkit.Maui.*` was accepted, with `201 Created`.
+
+Reservations cannot be queried through any API. The only test is a push, so each candidate prefix
+costs a release run, and any ordinary English word is a gamble. Everything — repository, folders,
+projects, assemblies, namespaces, types and package IDs — carries the same name, so there is nothing
+to keep in step.
+
+`Me.*` is not yet prefix-reserved. Requesting that reservation would give the verified badge and
+stop anyone else taking `Me.Something`; it is worth doing now that something is published under it.
 
 ## This must run on Windows
 
@@ -130,16 +132,16 @@ and fails at the final step. Created on nuget.org under Account → Trusted Publ
 | Package Owner | `melihercan` |
 | CI/CD Provider | GitHub Actions |
 | Repository Owner | `melihercan` |
-| Repository | `Mauime` |
+| Repository | `Me.Toolkit.Maui` |
 | Workflow File | `publish.yml` (file name only, no path) |
 | Environment | *(none)* |
 | Scopes | Push new packages and package versions |
-| Glob | `Melihercan.Mauime.*` |
+| Glob | `Me.Toolkit.Maui.*` |
 
 The policy binds to the repository **ID**, not just its name, so a policy created for another
 repository can never cover this one however wide its glob.
 
-Because `Melihercan.Mauime.*` are new IDs with no existing owner, the glob has to permit **new** packages, not
+Because `Me.Toolkit.Maui.*` are new IDs with no existing owner, the glob has to permit **new** packages, not
 just new versions of existing ones — that is the "Push new packages and package versions" scope
 above. A policy limited to new versions works for every release after the first and fails on the
 first.
@@ -161,7 +163,7 @@ separately, so they cannot drift.
 
 Nothing here inherits a version history: these are new package IDs with no consumers, so there is no
 lowest-version or downgrade problem to reason about. The `Xamarinme.*` packages stay on nuget.org
-exactly as they are and are not deprecated — nothing referencing them will ever resolve a `Melihercan.Mauime.*`
+exactly as they are and are not deprecated — nothing referencing them will ever resolve a `Me.Toolkit.Maui.*`
 package, because NuGet has no redirect between IDs.
 
 ## There is no demo deployment

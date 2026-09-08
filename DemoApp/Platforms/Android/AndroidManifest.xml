@@ -2,12 +2,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 	<application android:allowBackup="true" android:icon="@mipmap/appicon" android:roundIcon="@mipmap/appicon_round" android:supportsRtl="true"></application>
 
-	<!-- Mauime.WebHostPatch: Kestrel needs to open a listening socket. -->
+	<!-- Me.Toolkit.Maui.WebHostPatch: Kestrel needs to open a listening socket. -->
 	<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 	<uses-permission android:name="android.permission.INTERNET" />
 
 	<!--
-		Mauime.Nfc: without this, EnableForegroundDispatch throws SecurityException. The template
+		Me.Toolkit.Maui.Nfc: without this, EnableForegroundDispatch throws SecurityException. The template
 		does not include it, so it is easy to blame the library for a missing permission.
 
 		required="false" so the app still installs on a device with no NFC hardware, where INfc

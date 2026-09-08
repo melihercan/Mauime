@@ -1,8 +1,8 @@
 using DemoApp.ViewModels;
-using Mauime.Configuration;
-using Mauime.Hosting;
-using Mauime.Nfc;
-using Mauime.WebHostPatch;
+using Me.Toolkit.Maui.Configuration;
+using Me.Toolkit.Maui.Hosting;
+using Me.Toolkit.Maui.Nfc;
+using Me.Toolkit.Maui.WebHostPatch;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
@@ -14,7 +14,7 @@ using Syncfusion.Maui.Toolkit.Hosting;
 namespace DemoApp;
 
 /// <summary>
-/// Wires up all four Mauime libraries. This file is the point of the demo: everything each package
+/// Wires up all four Me.Toolkit.Maui libraries. This file is the point of the demo: everything each package
 /// asks of an app is here, in one place, and it is short.
 /// </summary>
 public static class MauiProgram
@@ -43,30 +43,30 @@ public static class MauiProgram
                 fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
             });
 
-        // Mauime.Configuration - appsettings.json ships in the app package as a MauiAsset.
+        // Me.Toolkit.Maui.Configuration - appsettings.json ships in the app package as a MauiAsset.
         builder.Configuration.AddAppPackageJson();
 
-        // Mauime.Hosting - the environment name comes from MAUI_ENVIRONMENT in that file, read when
+        // Me.Toolkit.Maui.Hosting - the environment name comes from MAUI_ENVIRONMENT in that file, read when
         // IHostEnvironment is first resolved. Xamarinme called the key XAMARIN_ENVIRONMENT.
-        builder.UseMauimeHostingFromConfiguration();
+        builder.UseMeToolkitMauiHostingFromConfiguration();
 
         // ...and then the overlay for whichever environment it named. Two calls rather than one,
         // because the file that says which environment this is has to be read before the
         // environment-specific file can be chosen.
-        var environment = builder.Configuration[MauimeHostingExtensions.DefaultConfigurationKey];
+        var environment = builder.Configuration[MeToolkitMauiHostingExtensions.DefaultConfigurationKey];
         if (!string.IsNullOrEmpty(environment))
         {
             builder.Configuration.AddAppPackageJson(
-                MauimeConfigurationExtensions.EnvironmentFileName(
-                    MauimeConfigurationExtensions.DefaultFileName, environment));
+                MeToolkitMauiConfigurationExtensions.EnvironmentFileName(
+                    MeToolkitMauiConfigurationExtensions.DefaultFileName, environment));
         }
 
-        // Mauime.Nfc - registers INfc, and wires Android's OnNewIntent so MainActivity needs no edit.
-        builder.UseMauimeNfc();
+        // Me.Toolkit.Maui.Nfc - registers INfc, and wires Android's OnNewIntent so MainActivity needs no edit.
+        builder.UseMeToolkitMauiNfc();
 
-        // Mauime.WebHostPatch - registers the server but does not start it. Starting a listening
+        // Me.Toolkit.Maui.WebHostPatch - registers the server but does not start it. Starting a listening
         // socket the moment an app launches is rarely what anyone wants.
-        builder.UseMauimeWebHost(options =>
+        builder.UseMeToolkitMauiWebHost(options =>
         {
             options.Port = int.TryParse(builder.Configuration["WebHost:Port"], out var port) ? port : 0;
             options.ConfigureApplication = app => app.Run(context =>

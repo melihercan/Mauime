@@ -14,7 +14,7 @@
 
 		<OutputType>Exe</OutputType>
 
-		<!-- An app is not a package. Without this, `dotnet pack Mauime.slnx` tries to pack the demo
+		<!-- An app is not a package. Without this, `dotnet pack Me.Toolkit.Maui.slnx` tries to pack the demo
 		     and fails with NU5026. -->
 		<IsPackable>false</IsPackable>
 		<RootNamespace>DemoApp</RootNamespace>
@@ -32,7 +32,7 @@
 		<MauiXamlInflator>SourceGen</MauiXamlInflator>
 
 		<!-- Display name -->
-		<ApplicationTitle>Mauime Demo</ApplicationTitle>
+		<ApplicationTitle>Me.Toolkit.Maui Demo</ApplicationTitle>
 
 		<!-- App Identifier -->
 		<ApplicationId>com.melihercan.mauime.demoapp</ApplicationId>
@@ -92,14 +92,14 @@
 		compile if their API changes underneath it.
 	-->
 	<ItemGroup>
-		<ProjectReference Include="..\Mauime.Configuration\Mauime.Configuration.csproj" />
-		<ProjectReference Include="..\Mauime.Hosting\Mauime.Hosting.csproj" />
-		<ProjectReference Include="..\Mauime.Nfc\Mauime.Nfc.csproj" />
-		<ProjectReference Include="..\Mauime.WebHostPatch\Mauime.WebHostPatch.csproj" />
+		<ProjectReference Include="..\Me.Toolkit.Maui.Configuration\Me.Toolkit.Maui.Configuration.csproj" />
+		<ProjectReference Include="..\Me.Toolkit.Maui.Hosting\Me.Toolkit.Maui.Hosting.csproj" />
+		<ProjectReference Include="..\Me.Toolkit.Maui.Nfc\Me.Toolkit.Maui.Nfc.csproj" />
+		<ProjectReference Include="..\Me.Toolkit.Maui.WebHostPatch\Me.Toolkit.Maui.WebHostPatch.csproj" />
 	</ItemGroup>
 
 	<!--
-		The settings files Mauime.Configuration reads. MauiAsset is the MAUI way to put a file in the
+		The settings files Me.Toolkit.Maui.Configuration reads. MauiAsset is the MAUI way to put a file in the
 		app package; Xamarinme had to embed them as assembly resources because Xamarin had nothing
 		equivalent. LogicalName strips the folder, so the app asks for "appsettings.json".
 	-->

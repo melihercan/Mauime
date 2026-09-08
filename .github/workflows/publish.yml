@@ -6,13 +6,13 @@ name: Publish
 #
 # Ways in:
 #   * tag v<version>                — publishes every package
-#   * tag configuration-v<version>  — publishes Mauime.Configuration only
-#   * tag hosting-v<version>        — publishes Mauime.Hosting only
-#   * tag webhostpatch-v<version>   — publishes Mauime.WebHostPatch only
+#   * tag configuration-v<version>  — publishes Me.Toolkit.Maui.Configuration only
+#   * tag hosting-v<version>        — publishes Me.Toolkit.Maui.Hosting only
+#   * tag webhostpatch-v<version>   — publishes Me.Toolkit.Maui.WebHostPatch only
 #   * run manually                  — defaults to a dry run that packs and uploads the .nupkg
 #                                     files as build artifacts without publishing anything
 #
-# Mauime.Nfc is deliberately absent. It builds, ships in the demo and has tests, but its reading
+# Me.Toolkit.Maui.Nfc is deliberately absent. It builds, ships in the demo and has tests, but its reading
 # session is unfinished, so the project sets IsPackable=false and there is nothing here to pack.
 on:
   push:
@@ -42,9 +42,9 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  CONFIGURATION_PROJECT: Mauime.Configuration/Mauime.Configuration.csproj
-  HOSTING_PROJECT: Mauime.Hosting/Mauime.Hosting.csproj
-  WEBHOSTPATCH_PROJECT: Mauime.WebHostPatch/Mauime.WebHostPatch.csproj
+  CONFIGURATION_PROJECT: Me.Toolkit.Maui.Configuration/Me.Toolkit.Maui.Configuration.csproj
+  HOSTING_PROJECT: Me.Toolkit.Maui.Hosting/Me.Toolkit.Maui.Hosting.csproj
+  WEBHOSTPATCH_PROJECT: Me.Toolkit.Maui.WebHostPatch/Me.Toolkit.Maui.WebHostPatch.csproj
 
 jobs:
   publish:
@@ -77,7 +77,7 @@ jobs:
       # Reads the solution and installs exactly the workloads its target frameworks need, rather
       # than a hardcoded list that would drift from Directory.Build.props.
       - name: Install MAUI workloads
-        run: dotnet workload restore Mauime.slnx
+        run: dotnet workload restore Me.Toolkit.Maui.slnx
 
       # Works out which projects this run covers, and which version a tag claims.
       - name: Resolve targets
@@ -126,13 +126,13 @@ jobs:
 
       # All four libraries, including the one that is never packed: the tests read every library's
       # compiled assemblies off disk through MetadataLoadContext rather than referencing them, so
-      # PublicApiSurfaceTests and MultiTargetingTests fail outright if Mauime.Nfc has not been built
+      # PublicApiSurfaceTests and MultiTargetingTests fail outright if Me.Toolkit.Maui.Nfc has not been built
       # in this configuration. DemoApp is excluded for the same reason as in ci.yml - it is an app,
       # it is slow, and nothing in it ships.
       - name: Build libraries
         shell: pwsh
         run: |
-          foreach ($project in 'Mauime.Configuration','Mauime.Hosting','Mauime.Nfc','Mauime.WebHostPatch') {
+          foreach ($project in 'Me.Toolkit.Maui.Configuration','Me.Toolkit.Maui.Hosting','Me.Toolkit.Maui.Nfc','Me.Toolkit.Maui.WebHostPatch') {
             dotnet build "$project/$project.csproj" --configuration Release -warnaserror
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           }
@@ -143,7 +143,7 @@ jobs:
       # know: it forwards unrecognised arguments to the test executable, which exits 5 having run
       # nothing. See the same warning in ci.yml, where it really happened.
       - name: Test
-        run: dotnet test --project Mauime.Tests/Mauime.Tests.csproj --configuration Release
+        run: dotnet test --project Me.Toolkit.Maui.Tests/Me.Toolkit.Maui.Tests.csproj --configuration Release
 
       # --no-build, so what is published is exactly what the tests just ran against.
       - name: Pack

@@ -16,7 +16,7 @@
     have emitted hundreds of warnings; here the docs came with the code. Test projects are excluded:
     their members are not API.
   -->
-  <PropertyGroup Condition="$(MSBuildProjectName.StartsWith('Mauime.')) AND !$(MSBuildProjectName.EndsWith('.Tests'))">
+  <PropertyGroup Condition="$(MSBuildProjectName.StartsWith('Me.Toolkit.Maui.')) AND !$(MSBuildProjectName.EndsWith('.Tests'))">
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
@@ -30,36 +30,36 @@
     FileVersion are left to derive from Version - Xamarinme.Configuration pinned AssemblyVersion at
     1.0.0 while shipping 1.0.3, so every 1.0.x assembly presented the same identity to the binder.
   -->
-  <PropertyGroup Condition="$(MSBuildProjectName.StartsWith('Mauime.')) AND !$(MSBuildProjectName.EndsWith('.Tests'))">
+  <PropertyGroup Condition="$(MSBuildProjectName.StartsWith('Me.Toolkit.Maui.')) AND !$(MSBuildProjectName.EndsWith('.Tests'))">
     <Authors>melihercan</Authors>
     <Company>melihercan</Company>
     <Copyright>melihercan 2020-2026</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageIcon>me.png</PackageIcon>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageProjectUrl>https://github.com/melihercan/Mauime</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/melihercan/Mauime</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/melihercan/Me.Toolkit.Maui</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/melihercan/Me.Toolkit.Maui</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
   </PropertyGroup>
 
-  <ItemGroup Condition="$(MSBuildProjectName.StartsWith('Mauime.')) AND !$(MSBuildProjectName.EndsWith('.Tests'))">
+  <ItemGroup Condition="$(MSBuildProjectName.StartsWith('Me.Toolkit.Maui.')) AND !$(MSBuildProjectName.EndsWith('.Tests'))">
     <None Include="$(MSBuildThisFileDirectory)doc\me.png" Pack="true" PackagePath="" Visible="false" />
     <None Include="README.md" Pack="true" PackagePath="" />
   </ItemGroup>
 
   <!--
     The MAUI target frameworks, in one place rather than copied into four csprojs.
-    Libraries opt in with <TargetFrameworks>$(MauimeTargetFrameworks)</TargetFrameworks>;
-    Mauime.Tests stays on plain net10.0 and ignores this.
+    Libraries opt in with <TargetFrameworks>$(MeToolkitMauiTargetFrameworks)</TargetFrameworks>;
+    Me.Toolkit.Maui.Tests stays on plain net10.0 and ignores this.
 
     net10.0 is deliberately included alongside the platform frameworks: it is the slice a
-    non-platform project can reference, and for Mauime.Nfc it is where "this platform has no
+    non-platform project can reference, and for Me.Toolkit.Maui.Nfc it is where "this platform has no
     implementation" lives. Xamarinme.Nfc used netstandard2.0 for the same role.
   -->
   <PropertyGroup Label="MAUI multi-targeting">
-    <MauimeTargetFrameworks>net10.0;net10.0-android</MauimeTargetFrameworks>
-    <MauimeTargetFrameworks Condition="!$([MSBuild]::IsOSPlatform('linux'))">$(MauimeTargetFrameworks);net10.0-ios;net10.0-maccatalyst</MauimeTargetFrameworks>
-    <MauimeTargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(MauimeTargetFrameworks);net10.0-windows10.0.19041.0</MauimeTargetFrameworks>
+    <MeToolkitMauiTargetFrameworks>net10.0;net10.0-android</MeToolkitMauiTargetFrameworks>
+    <MeToolkitMauiTargetFrameworks Condition="!$([MSBuild]::IsOSPlatform('linux'))">$(MeToolkitMauiTargetFrameworks);net10.0-ios;net10.0-maccatalyst</MeToolkitMauiTargetFrameworks>
+    <MeToolkitMauiTargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(MeToolkitMauiTargetFrameworks);net10.0-windows10.0.19041.0</MeToolkitMauiTargetFrameworks>
   </PropertyGroup>
 
   <!--
@@ -71,7 +71,7 @@
 
     Scoped to the libraries: DemoApp is an Android *app*, and an app needs its resource designer.
   -->
-  <PropertyGroup Condition="$(MSBuildProjectName.StartsWith('Mauime.')) AND !$(MSBuildProjectName.EndsWith('.Tests')) AND $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">
+  <PropertyGroup Condition="$(MSBuildProjectName.StartsWith('Me.Toolkit.Maui.')) AND !$(MSBuildProjectName.EndsWith('.Tests')) AND $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">
     <AndroidGenerateResourceDesigner>false</AndroidGenerateResourceDesigner>
   </PropertyGroup>
 

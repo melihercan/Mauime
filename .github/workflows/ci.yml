@@ -34,7 +34,7 @@ jobs:
       # Reads the solution and installs exactly the workloads its target frameworks need, rather
       # than a hardcoded list that would drift from Directory.Build.props.
       - name: Install MAUI workloads
-        run: dotnet workload restore Mauime.slnx
+        run: dotnet workload restore Me.Toolkit.Maui.slnx
 
       # The projects are named rather than building the solution, because DemoApp is in the solution
       # and deliberately out of CI: it is an app, it builds far slower than a library, and nothing in
@@ -46,7 +46,7 @@ jobs:
       - name: Build libraries
         shell: pwsh
         run: |
-          foreach ($project in 'Mauime.Configuration','Mauime.Hosting','Mauime.Nfc','Mauime.WebHostPatch') {
+          foreach ($project in 'Me.Toolkit.Maui.Configuration','Me.Toolkit.Maui.Hosting','Me.Toolkit.Maui.Nfc','Me.Toolkit.Maui.WebHostPatch') {
             dotnet build "$project/$project.csproj" --configuration Release -warnaserror
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           }
@@ -63,4 +63,4 @@ jobs:
       # not hypothetical here - the first version of this step passed -warnaserror and reported
       # "total: 0". It fails the job rather than passing silently, but it tests nothing.
       - name: Test
-        run: dotnet test --project Mauime.Tests/Mauime.Tests.csproj --configuration Release
+        run: dotnet test --project Me.Toolkit.Maui.Tests/Me.Toolkit.Maui.Tests.csproj --configuration Release

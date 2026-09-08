@@ -1,11 +1,10 @@
-# Mauime
+# Me.Toolkit.Maui
 
 Libraries and plugins for .NET MAUI applications, ported from
 [Xamarinme](https://github.com/melihercan/Xamarinme) now that Xamarin is retired.
 
-**All four libraries are ported and packaged at `26.9.8`; nothing is published yet.** The publishing
-workflow exists and three of the four are ready to go out — `Mauime.Nfc` is held back as unfinished.
-What remains is the nuget.org Trusted Publishing policy and the first tag; see
+**Three of the four are published at `26.9.8`.** `Me.Toolkit.Maui.Nfc` is held back as unfinished —
+it builds and is tested, but its reading session has never been used against a physical tag. See
 [Publishing](Publishing). `DemoApp/` is a single MAUI app with a tab per library, replacing Xamarinme's three
 Xamarin.Forms solutions across 17 projects. The Xamarin sources were imported under `legacy/` for the
 characterization phase and deleted once each library had been replaced — the history is the record.
@@ -13,19 +12,18 @@ characterization phase and deleted once each library had been replaced — the h
 The `Xamarinme.*` packages stay on nuget.org exactly as they are, and are **not** deprecated. That
 is a decision, not an oversight: `Blazorme.TestHost` looked like a precedent, but it worked because
 it kept the *same* package ID, so existing consumers could resolve a newer working version. Nothing
-referencing `Xamarinme.WebHostPatch` will ever resolve `Melihercan.Mauime.WebHostPatch` — NuGet has no redirect
+referencing `Xamarinme.WebHostPatch` will ever resolve `Me.Toolkit.Maui.WebHostPatch` — NuGet has no redirect
 between IDs.
 
 | Planned package | Replaces | Status |
 |---|---|---|
-| `Melihercan.Mauime.Nfc` | `Xamarinme.Nfc` — never published | **Ported, not published** — Android and iOS implemented, session unfinished; `IsPackable=false` |
-| `Melihercan.Mauime.Configuration` | [`Xamarinme.Configuration`](https://www.nuget.org/packages/Xamarinme.Configuration) 1.0.2 | **Ported** |
-| `Melihercan.Mauime.Hosting` | [`Xamarinme.Hosting`](https://www.nuget.org/packages/Xamarinme.Hosting) 1.0.3 | **Ported** |
-| `Melihercan.Mauime.WebHostPatch` | [`Xamarinme.WebHostPatch`](https://www.nuget.org/packages/Xamarinme.WebHostPatch) 1.0.0 | **Ported** — no patch needed on .NET 10 |
+| `Me.Toolkit.Maui.Nfc` | `Xamarinme.Nfc` — never published | **Ported, not published** — Android and iOS implemented, session unfinished; `IsPackable=false` |
+| [`Me.Toolkit.Maui.Configuration`](https://www.nuget.org/packages/Me.Toolkit.Maui.Configuration) | [`Xamarinme.Configuration`](https://www.nuget.org/packages/Xamarinme.Configuration) 1.0.2 | **Published** 26.9.8 |
+| [`Me.Toolkit.Maui.Hosting`](https://www.nuget.org/packages/Me.Toolkit.Maui.Hosting) | [`Xamarinme.Hosting`](https://www.nuget.org/packages/Xamarinme.Hosting) 1.0.3 | **Published** 26.9.8 |
+| [`Me.Toolkit.Maui.WebHostPatch`](https://www.nuget.org/packages/Me.Toolkit.Maui.WebHostPatch) | [`Xamarinme.WebHostPatch`](https://www.nuget.org/packages/Xamarinme.WebHostPatch) 1.0.0 | **Published** 26.9.8 — no patch needed on .NET 10 |
 
-The published IDs carry a `Toolkit.` prefix — `Melihercan.Mauime.Configuration` — because nuget.org
-rejects any ID beginning with `Maui` as reserved. Projects, assemblies and namespaces are unchanged;
-see [Publishing](Publishing).
+The repository was called Mauime. It is not, because nuget.org rejects any package ID beginning with
+`Maui` as reserved — see [Publishing](Publishing) for what that took to establish.
 
 All four multi-target `net10.0`, `net10.0-android`, `net10.0-ios`, `net10.0-maccatalyst` and
 `net10.0-windows10.0.19041.0`.

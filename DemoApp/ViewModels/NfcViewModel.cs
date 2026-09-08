@@ -1,6 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Text;
-using Mauime.Nfc;
+using Me.Toolkit.Maui.Nfc;
 using ReactiveUI;
 using ReactiveUI.Primitives;
 using ReactiveUI.Primitives.Advanced;

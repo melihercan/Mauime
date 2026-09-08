@@ -17,6 +17,6 @@ public partial class AppShell : Shell
     {
         InitializeComponent();
 
-        Items.Add(new ShellContent { Title = "Mauime Demo", Content = page });
+        Items.Add(new ShellContent { Title = "Me.Toolkit.Maui Demo", Content = page });
     }
 }

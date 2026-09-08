@@ -6,7 +6,7 @@ using ReactiveUI;
 namespace DemoApp.ViewModels;
 
 /// <summary>
-/// What Mauime.Hosting actually changes: without it, <c>IHostEnvironment</c> reports
+/// What Me.Toolkit.Maui.Hosting actually changes: without it, <c>IHostEnvironment</c> reports
 /// <c>Production</c> on every platform, always.
 ///
 /// The constructor is also the demonstration — <see cref="ILogger{T}"/>,
@@ -35,7 +35,7 @@ public sealed class HostingViewModel : ReactiveObject
 
     public bool IsDevelopment { get; }
 
-    /// <summary>Comes from the platform, not from Mauime — the wrapper only changes the name.</summary>
+    /// <summary>Comes from the platform, not from Me.Toolkit.Maui — the wrapper only changes the name.</summary>
     public string ApplicationName { get; }
 
     /// <summary>Also from the platform.</summary>

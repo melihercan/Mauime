@@ -1,0 +1,67 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(MeToolkitMauiTargetFrameworks)</TargetFrameworks>
+    <UseMauiCore>true</UseMauiCore>
+    <SingleProject>true</SingleProject>
+    <AssemblyName>Me.Toolkit.Maui.Nfc</AssemblyName>
+    <RootNamespace>Me.Toolkit.Maui.Nfc</RootNamespace>
+    <PackageId>Me.Toolkit.Maui.Nfc</PackageId>
+
+    <!--
+      Not published. The library builds, ships in the demo and is covered by tests, but the reading
+      session is not finished and has never been exercised against a tag on a device. Excluding it
+      here rather than only in publish.yml means a plain `dotnet pack` on the solution cannot
+      produce a Me.Toolkit.Maui.Nfc.nupkg by accident. Remove this when the session is done.
+    -->
+    <IsPackable>false</IsPackable>
+    <Version>26.09.08</Version>
+    <Product>Me.Toolkit.Maui.Nfc</Product>
+    <Description>NFC for .NET MAUI: read and write NDEF messages on a tag.
+Android and iOS are implemented. Mac Catalyst and Windows compile and throw PlatformNotSupportedException, so an app targeting every platform needs no conditional code around the registration.
+The NDEF types are implemented in the package rather than taken from a third-party library, so it has no dependencies beyond MAUI itself.</Description>
+    <PackageTags>maui nfc ndef android ios plugin</PackageTags>
+    <PackageReleaseNotes>First release. Ported from Xamarinme.Nfc, which was never published.
+INfc is resolved from dependency injection after builder.UseMeToolkitMauiNfc(), which also wires Android's OnNewIntent through ConfigureLifecycleEvents. Xamarinme required that call to be added to MainActivity by hand, with nothing to catch it if you forgot.
+NdefMessage and NdefRecord are implemented here, replacing NdefLibrary 4.1.0 - a 2017 package with a netstandard1.4 asset that sat in the public API. The binary format is unchanged, verified byte for byte against what NdefLibrary produces.
+Fixed on the way over: PendingIntent.GetActivity with no flags threw on Android 12 and later, since API 31 made FLAG_MUTABLE or FLAG_IMMUTABLE mandatory, so starting a session crashed on every current phone. iOS threw from inside CoreNFC completion callbacks, which run on the session's dispatch queue where nothing can observe the throw, leaving callers awaiting a task that never completed. Dispose was empty on Android, so the activity-state subscription outlived the instance.</PackageReleaseNotes>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      Microsoft.Maui.Core, not Microsoft.Maui.Controls: Core carries MauiAppBuilder, the
+      LifecycleEvents builders and Microsoft.Maui.ApplicationModel, which is everything these
+      libraries need. Microsoft.Maui.Essentials alone is not enough - it has none of them.
+      Since .NET 8 the UseMaui* properties no longer add the package reference implicitly (MA002).
+    -->
+    <PackageReference Include="Microsoft.Maui.Core" Version="$(MauiVersion)" />
+  </ItemGroup>
+
+  <!--
+    Platform sources are selected explicitly. The Platforms/ convention is an app thing: in a MAUI
+    class library those folders are compiled into every target framework, which was checked rather
+    than assumed - Platforms/Android code failed to build for net10.0 until these conditions were
+    added.
+
+    Every slice gets exactly one NfcPlatform, so the shared code names no platform type and needs no
+    #if. Android and iOS have real implementations; net10.0, Mac Catalyst and Windows share the
+    unsupported one.
+  -->
+  <ItemGroup>
+    <Compile Remove="Platforms/**/*.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">
+    <Compile Include="Platforms/Android/**/*.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">
+    <Compile Include="Platforms/iOS/**/*.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) != 'android' AND
+                        $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) != 'ios'">
+    <Compile Include="Platforms/Unsupported/**/*.cs" />
+  </ItemGroup>
+
+</Project>

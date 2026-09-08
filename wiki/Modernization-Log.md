@@ -91,8 +91,8 @@ suppressed with `NoWarn`.
 
 ## Phase 1 — the MAUI skeleton
 
-Four library projects, no library code: `Mauime.Nfc`, `Mauime.Configuration`, `Mauime.Hosting` and
-`Mauime.WebHostPatch`, each multi-targeting `net10.0`, `net10.0-android`, `net10.0-ios`,
+Four library projects, no library code: `Me.Toolkit.Maui.Nfc`, `Me.Toolkit.Maui.Configuration`, `Me.Toolkit.Maui.Hosting` and
+`Me.Toolkit.Maui.WebHostPatch`, each multi-targeting `net10.0`, `net10.0-android`, `net10.0-ios`,
 `net10.0-maccatalyst` and `net10.0-windows10.0.19041.0`. Twenty assemblies, all building clean.
 
 The point of a skeleton phase is to settle the build questions while the answer to "did that work?"
@@ -102,7 +102,7 @@ is still unambiguous. Four were settled by building, not by reading:
   `Microsoft.Maui.Essentials`. Essentials gives `Platform.CurrentActivity` but has no
   `MauiAppBuilder` and no `LifecycleEvents`; Core has all three. An NFC plugin has no business
   depending on Controls.
-- **`Mauime.WebHostPatch` needs no packages at all.** `WebApplication.CreateSlimBuilder()` plus
+- **`Me.Toolkit.Maui.WebHostPatch` needs no packages at all.** `WebApplication.CreateSlimBuilder()` plus
   `UseKestrel` compiles clean against `net10.0-android` with a `Microsoft.AspNetCore.App` framework
   reference and nothing else. **This conclusion was wrong**, and Phase 6 explains why: the probe
   built a library, and the framework reference only fails when an *app* needs a runtime pack.
@@ -124,7 +124,7 @@ netstandard2.0. Making it true needed two changes:
 
 - one `MetadataLoadContext` **per assembly**, because an Android `System.Runtime` and an iOS
   `System.Runtime` cannot share a simple-name resolver;
-- `Mauime.ReferencePaths.txt` beside every assembly, written from the `ReferencePath` item, because
+- `Me.Toolkit.Maui.ReferencePaths.txt` beside every assembly, written from the `ReferencePath` item, because
   a library build leaves its dependencies nowhere near `bin/`.
 
 Verified with a temporary type exposing `Android.Nfc.NfcAdapter`,
@@ -132,13 +132,13 @@ Verified with a temporary type exposing `Android.Nfc.NfcAdapter`,
 correctly, from a `net10.0` test project that can reference none of them. `MultiTargetingTests`
 caught the divergence at the same time, which is exactly its job.
 
-Also verified: a `net10.0` project referencing `Mauime.Nfc` resolves the `net10.0` slice byte for
+Also verified: a `net10.0` project referencing `Me.Toolkit.Maui.Nfc` resolves the `net10.0` slice byte for
 byte, never the Android one. That is why the platform slices can only be covered through metadata.
 
 74 tests, green in Debug and Release, 30 consecutive clean runs. The three new tests were each
 proven by breaking what they guard.
 
-## Phase 2 — Mauime.Nfc
+## Phase 2 — Me.Toolkit.Maui.Nfc
 
 The port of the one library with a clear reason to exist. `legacy/Nfc` was deleted in the same
 commit; it had never built on this toolchain anyway.
@@ -153,18 +153,18 @@ than adding them, so **the phase added no NuGet packages at all**:
 - **Android and iOS only.** Mac Catalyst and Windows would have meant the 678-line PC/SC layer and
   three `PCSC` packages, for an external USB reader rather than phone NFC. They share the
   platform-neutral implementation, which throws `PlatformNotSupportedException`.
-- **DI instead of a static locator.** `builder.UseMauimeNfc()` registers `INfc`; `CrossNfc.Current`
+- **DI instead of a static locator.** `builder.UseMeToolkitMauiNfc()` registers `INfc`; `CrossNfc.Current`
   is gone.
 
 ### The API is smaller than what it replaced
 
 Every implementation is `internal`, so all five slices expose one surface —
-`INfc`, `MauimeNfcExtensions`, `NfcTagDetectedEventArgs` and the three NDEF types.
+`INfc`, `MeToolkitMauiNfcExtensions`, `NfcTagDetectedEventArgs` and the three NDEF types.
 `CrossNfc`, the per-platform public `Nfc` classes, the manual `OnNewIntent` hook and the unused
 `NfcTagStatus` are all gone. `MultiTargetingTests` stopped being vacuous the moment there was a
 surface to compare.
 
-`UseMauimeNfc` wires Android's `OnNewIntent` through `ConfigureLifecycleEvents`, so consumers no
+`UseMeToolkitMauiNfc` wires Android's `OnNewIntent` through `ConfigureLifecycleEvents`, so consumers no
 longer hand-edit `MainActivity`.
 
 ### Defects fixed, and how far each is proved
@@ -194,7 +194,7 @@ implementation — 40 tests.
 The port's real risk is a codec that disagrees with the old one, which would corrupt tags silently.
 So the byte vectors in `NdefTests` were not invented: each was produced by running NdefLibrary 4.1.0
 on .NET 10 and capturing what it emitted — a short text record, a two-record message, a record with
-an identifier, a 300-byte payload using the four-byte length field, and the empty record. Mauime
+an identifier, a 300-byte payload using the four-byte length field, and the empty record. Me.Toolkit.Maui
 produces the same bytes for all of them.
 
 Malformed input is refused rather than mis-parsed, including a four-byte payload length claiming
@@ -203,19 +203,19 @@ more than the buffer holds, which would otherwise overflow to a negative length 
 
 ### The forked Primitives split the test project in two
 
-Adding a reference to `Mauime.Nfc` broke **thirty tests that had nothing to do with NFC**.
+Adding a reference to `Me.Toolkit.Maui.Nfc` broke **thirty tests that had nothing to do with NFC**.
 `Microsoft.Maui.Core` wants `Microsoft.Extensions.Primitives` 10.0.0; `legacy/WebHostPatch`'s
 vendored fork is stamped 5.9.0.0 and occupies that filename in the output directory; the real one
 therefore never arrives and everything needing it fails with `FileNotFoundException`.
 
 That fork cannot share a process with modern `Microsoft.Extensions`, so the tests were split:
-`Mauime.Tests` for the libraries and the API baseline, `Legacy.Tests` for the characterization of
+`Me.Toolkit.Maui.Tests` for the libraries and the API baseline, `Legacy.Tests` for the characterization of
 `legacy/`. Making them coexist would have meant hiding the very defect the fork is pinned for.
 `Legacy.Tests` dies with `legacy/`.
 
 It also removed the last heuristic from the baseline machinery: `legacy/` lost its
-`Directory.Build.targets` shield so its assemblies emit `Mauime.ReferencePaths.txt` too, and there
-is now one code path for resolving any assembly instead of a manifest for Mauime and a bin-scan for
+`Directory.Build.targets` shield so its assemblies emit `Me.Toolkit.Maui.ReferencePaths.txt` too, and there
+is now one code path for resolving any assembly instead of a manifest for Me.Toolkit.Maui and a bin-scan for
 legacy.
 
 120 tests, green in Debug and Release. Every new test was proven by breaking what it guards:
@@ -224,7 +224,7 @@ letting the unsupported platform succeed silently failed 1.
 
 ## Phase 3 — the remaining three libraries
 
-`Mauime.Configuration`, `Mauime.Hosting` and `Mauime.WebHostPatch`, which completes the port. One
+`Me.Toolkit.Maui.Configuration`, `Me.Toolkit.Maui.Hosting` and `Me.Toolkit.Maui.WebHostPatch`, which completes the port. One
 package was added, `Microsoft.Extensions.Configuration.Json`; the other two libraries have no NuGet
 dependencies at all.
 
@@ -236,10 +236,10 @@ one of them only after the first attempt failed:
 - **Its `EnvironmentName` setter throws `NotImplementedException`.** The probe that found the
   registration checked `CanWrite` — true, because the interface declares a setter — and concluded
   the name could simply be assigned. It cannot. Only calling it says so, and what said so was a test.
-  `Mauime.Hosting` wraps the platform environment instead, delegating everything but the name, so
+  `Me.Toolkit.Maui.Hosting` wraps the platform environment instead, delegating everything but the name, so
   `ApplicationName` and `ContentRootPath` still come from the platform.
 
-### Mauime.Configuration
+### Me.Toolkit.Maui.Configuration
 
 `AddAppPackageJson` reads a `MauiAsset`; `AddEmbeddedResourceJson` reads an embedded resource, which
 is the path Xamarinme offered and still works. Both layer `appsettings.{environment}.json` over the
@@ -249,7 +249,7 @@ prefix, into an empty configuration and no error at all.
 
 The parsing is `Microsoft.Extensions.Configuration.Json`'s. Xamarinme vendored a copy of Microsoft's
 Newtonsoft-era parser and froze it; this references the maintained one. That is the opposite call
-from `Mauime.Nfc`'s, and deliberately so: NdefLibrary was a dead 2017 package, while this is a live
+from `Me.Toolkit.Maui.Nfc`'s, and deliberately so: NdefLibrary was a dead 2017 package, while this is a live
 first-party component, and reimplementing it would have been the same vendoring mistake in newer
 clothes.
 
@@ -264,10 +264,10 @@ The app-package path has no coverage: MAUI's `FileSystem` on the net10.0 slice i
 reference-assembly stub and throws. Both paths funnel into the same layering code, so what is
 untested is the four lines that open the asset.
 
-### Mauime.WebHostPatch
+### Me.Toolkit.Maui.WebHostPatch
 
 No packages, no forks — a `Microsoft.AspNetCore.App` framework reference and nothing else.
-`IMauimeWebHost` starts and stops a `WebApplication` on Kestrel and reports the address it bound to,
+`IMeToolkitMauiWebHost` starts and stops a `WebApplication` on Kestrel and reports the address it bound to,
 read from the server rather than the options so a `Port` of 0 reports the port the operating system
 chose. Listening on every interface reports the machine's LAN address rather than `0.0.0.0`.
 
@@ -282,7 +282,7 @@ addresses and they would get different ports; binding `127.0.0.1` explicitly is 
 
 ### Documentation is now generated and enforced
 
-`GenerateDocumentationFile` is on for the four `Mauime.*` libraries, so CS1591 requires every public
+`GenerateDocumentationFile` is on for the four `Me.Toolkit.Maui.*` libraries, so CS1591 requires every public
 member to be documented and the packages will ship IntelliSense. Blazorme had to leave this off
 because its surface had no XML docs at all; here they came with the code. Keyed on project name
 rather than `IsPackable`, because `Directory.Build.props` is imported before the project body sets
@@ -303,7 +303,7 @@ The build is now **clean with `-warnaserror` in Debug and Release**, and CI enfo
 
 The API baseline lost its three `Xamarinme.*` assemblies. That is the second deliberate baseline
 change of the modernization, and the diff was reviewed to confirm it removed exactly those and
-touched nothing under `Mauime.*`.
+touched nothing under `Me.Toolkit.Maui.*`.
 
 Two pieces of machinery got simpler with the fork gone:
 
@@ -323,7 +323,7 @@ Windows, so a Linux job would build two slices per library instead of five — a
 Catalyst *library* slices compile on Windows; only building and signing an app for them needs a Mac,
 so a macOS job becomes necessary when the demo app lands, not before.
 
-`dotnet workload restore Mauime.slnx` installs what the solution's target frameworks need rather
+`dotnet workload restore Me.Toolkit.Maui.slnx` installs what the solution's target frameworks need rather
 than a hardcoded list that would drift from `Directory.Build.props`. That it accepts a `.slnx` at
 all was checked rather than assumed.
 
@@ -333,12 +333,12 @@ keeps refusing. What *was* verified is its command sequence, run locally in orde
 machine, which is the same platform the job uses.
 
 Publishing is not set up yet: it needs the package versions and metadata that have not been written,
-and a NuGet Trusted Publishing policy scoped to `Mauime.*` and bound to this repository.
+and a NuGet Trusted Publishing policy scoped to `Me.Toolkit.Maui.*` and bound to this repository.
 
 ## Phase 5 — package metadata
 
 All four packages are ready to publish, and none of them has been. `dotnet pack` produces
-`Mauime.Configuration`, `Mauime.Hosting`, `Mauime.Nfc` and `Mauime.WebHostPatch` at **26.9.8**, each
+`Me.Toolkit.Maui.Configuration`, `Me.Toolkit.Maui.Hosting`, `Me.Toolkit.Maui.Nfc` and `Me.Toolkit.Maui.WebHostPatch` at **26.9.8**, each
 with five target-framework slices, XML documentation for every slice, a README and the icon.
 
 Versions are date-based — `<Version>26.09.08</Version>`, which NuGet normalises to `26.9.8` —
@@ -351,7 +351,7 @@ Shared identity lives in `Directory.Build.props`; `Version`, `Product`, `Descrip
 repository quietly produced `.nupkg` files at versions that were never published.
 
 The release notes say what each package replaces and what changed, rather than "Creation." — which
-is what `Xamarinme.WebHostPatch` 1.0.0 shipped with. `Mauime.Configuration`'s names the one
+is what `Xamarinme.WebHostPatch` 1.0.0 shipped with. `Me.Toolkit.Maui.Configuration`'s names the one
 behavioural difference a Xamarinme user would trip over: a JSON `null` used to read as an empty
 string and is now simply absent.
 
@@ -364,7 +364,7 @@ compared byte for byte against `doc/me.png`. A plain build was confirmed to emit
 Decided rather than defaulted. `Blazorme.TestHost` looked like a precedent — a broken 1.0.0 rescued
 by multi-targeting a new version back to net8.0 — but it does not transfer: that worked because it
 was the **same package ID**, so existing consumers could resolve a newer, working version of the
-package they already referenced. `Xamarinme.WebHostPatch` and `Mauime.WebHostPatch` are different
+package they already referenced. `Xamarinme.WebHostPatch` and `Me.Toolkit.Maui.WebHostPatch` are different
 IDs, and NuGet has no redirect between IDs at any target framework. Targeting further back would not
 help either, since the implementation is `WebApplication` on ASP.NET Core 10.
 
@@ -373,10 +373,10 @@ decision is not to deprecate.
 
 ## Decisions taken before Phase 0
 
-- **Fresh git history.** Mauime does not carry Xamarinme's 153 commits.
-- **All four libraries are ported.** The recommendation was `Mauime.Nfc` alone — Hosting and
+- **Fresh git history.** Me.Toolkit.Maui does not carry Xamarinme's 153 commits.
+- **All four libraries are ported.** The recommendation was `Me.Toolkit.Maui.Nfc` alone — Hosting and
   Configuration are `MauiAppBuilder`, and WebHostPatch's two reasons to exist are both gone on
-  .NET 10 — and the decision was to port all four anyway. `Mauime.WebHostPatch` will therefore be a
+  .NET 10 — and the decision was to port all four anyway. `Me.Toolkit.Maui.WebHostPatch` will therefore be a
   Kestrel-in-MAUI convenience layer, not a fork of Microsoft code.
 - **No deprecations.** The `Xamarinme.*` packages stay on nuget.org as they are.
 - **Platform-agnostic tests only.** Unit tests for the shared slices plus the metadata API baseline;
@@ -388,7 +388,7 @@ One MAUI app replaces Xamarinme's three Xamarin.Forms solutions across 17 projec
 per library, on Syncfusion's `SfTabView` with ReactiveUI view models. It is in the solution and
 deliberately out of CI.
 
-### Mauime.WebHostPatch was rebuilt, because Phase 3 got it wrong
+### Me.Toolkit.Maui.WebHostPatch was rebuilt, because Phase 3 got it wrong
 
 Phase 3 rebuilt the library on `WebApplication` and a `Microsoft.AspNetCore.App` framework
 reference, and recorded that "a framework reference is all you need on .NET 10". **That is false on
@@ -463,7 +463,7 @@ and out of CI.
 
 ## Phase 7 — the web host on a device, and the address it reported
 
-`Mauime.WebHostPatch` had never actually served a request. Everything about it was argued from build
+`Me.Toolkit.Maui.WebHostPatch` had never actually served a request. Everything about it was argued from build
 output: the `NETSDK1082` reasoning, the choice of netstandard2.0 packages, the claim that the two
 Xamarinme forks were unnecessary. All of it was correct, and none of it was evidence.
 
@@ -518,7 +518,7 @@ Between the fix and the evidence sat an hour of wrong conclusions. `adb install 
 **Success** twice while the app kept running hour-old C#. .NET Android **Debug** builds use fast
 deployment: assemblies are pushed to `/data/data/<pkg>/files/.__override__/<abi>/` and are *not*
 packed into the APK, so installing the APK updates only the native shell. The device's
-`Mauime.WebHostPatch.dll` was timestamped 15:00 against a 15:09 build.
+`Me.Toolkit.Maui.WebHostPatch.dll` was timestamped 15:00 against a 15:09 build.
 
 Deploy with `dotnet build DemoApp/DemoApp.csproj -c Debug -f net10.0-android -t:Install`, and check
 `adb shell run-as <pkg> ls -la files/.__override__/<abi>/` before concluding anything about
@@ -546,7 +546,7 @@ opening each `.nupkg` and failing if any expected slice is missing — the `runs
 consequence, that step is the rule. It was checked both ways: against the three real packages, and
 against a synthetic package built the way Linux would build it.
 
-**`Mauime.Nfc` is held back.** It builds, ships in the demo and has tests, but its reading session is
+**`Me.Toolkit.Maui.Nfc` is held back.** It builds, ships in the demo and has tests, but its reading session is
 unfinished and has never been exercised against a physical tag. The project sets `IsPackable=false`,
 so `dotnet pack` cannot produce it by accident, and there is no `nfc-v*` trigger. It is still *built*
 by the publish job, because `PublicApiSurfaceTests` and `MultiTargetingTests` read every library's
@@ -560,9 +560,9 @@ comparison is against the raw csproj text and NuGet normalises only afterwards.
 
 - **`26.9.8` is the version.** Date-based, matching Blazorme and Utilme. Publishing it closes the
   door on ever shipping a `1.x`, and that was weighed and accepted.
-- **`Mauime.*` targets .NET 10 only.** No reaching back to `net8.0` or `net9.0`. MAUI apps on older
+- **`Me.Toolkit.Maui.*` targets .NET 10 only.** No reaching back to `net8.0` or `net9.0`. MAUI apps on older
   .NET cannot use these packages, which is a deliberate limit rather than an oversight — there are
-  no consumers to strand, and `Mauime.WebHostPatch` would need ASP.NET Core 8/9 rather than 10.
+  no consumers to strand, and `Me.Toolkit.Maui.WebHostPatch` would need ASP.NET Core 8/9 rather than 10.
 - **The `Xamarinme.*` packages stay on nuget.org as they are**, and are not deprecated. See Phase 5
   for why `Blazorme.TestHost` is not a precedent for rescuing them.
 - **No PC/SC.** Mac Catalyst and Windows throw `PlatformNotSupportedException` rather than pulling
@@ -573,9 +573,9 @@ comparison is against the raw csproj text and NuGet normalises only afterwards.
 - **The NuGet Trusted Publishing policy.** It does not exist yet, and it has to, before the first
   tag is pushed — the run will otherwise do everything correctly and fail at the final step. See
   [Publishing](Publishing) for the exact fields.
-- **`Mauime.Nfc`.** Unfinished, unpublished, and never exercised against a physical tag. The
+- **`Me.Toolkit.Maui.Nfc`.** Unfinished, unpublished, and never exercised against a physical tag. The
   Android foreground-dispatch path and the CoreNFC session have no behavioural coverage; the demo's
   NFC tab renders but has not been used to read anything.
 - **iOS and Mac Catalyst at runtime.** The library slices compile on Windows CI, but no app has been
-  built, signed or run on either. `Mauime.WebHostPatch`'s note that iOS stops a backgrounded server
+  built, signed or run on either. `Me.Toolkit.Maui.WebHostPatch`'s note that iOS stops a backgrounded server
   is inherited from the Xamarin era and unverified here.

@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<!--
-		Mauime.Nfc on iOS. This also needs a provisioning profile carrying the Near Field
+		Me.Toolkit.Maui.Nfc on iOS. This also needs a provisioning profile carrying the Near Field
 		Communication Tag Reading capability; without it the app will not sign.
 	-->
 	<key>com.apple.developer.nfc.readersession.formats</key>

@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>Me.Toolkit.Maui.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <!--
+    The Me.Toolkit.Maui libraries only. The legacy characterization lives in Legacy.Tests, which has to be a
+    separate project because legacy/WebHostPatch's forked Microsoft.Extensions.Primitives shadows
+    the real one for everything in its output directory.
+
+    Me.Toolkit.Maui.Nfc resolves to its net10.0 slice here, which is the "no implementation" one. That covers
+    the NDEF codec and the DI registration; the Android and iOS implementations are covered by the
+    API baseline only, since a net10.0 test project cannot reference their slices.
+
+    The baseline itself needs no references at all - it reads metadata off disk - so it covers the
+    legacy assemblies from here too.
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\Me.Toolkit.Maui.Configuration\Me.Toolkit.Maui.Configuration.csproj" />
+    <ProjectReference Include="..\Me.Toolkit.Maui.Hosting\Me.Toolkit.Maui.Hosting.csproj" />
+    <ProjectReference Include="..\Me.Toolkit.Maui.Nfc\Me.Toolkit.Maui.Nfc.csproj" />
+    <ProjectReference Include="..\Me.Toolkit.Maui.WebHostPatch\Me.Toolkit.Maui.WebHostPatch.csproj" />
+  </ItemGroup>
+
+  <!-- Settings fixtures for Me.Toolkit.Maui.Configuration's embedded-resource path. -->
+  <ItemGroup>
+    <EmbeddedResource Include="TestAssets\**\*.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentAssertions" Version="7.2.2" />
+    <PackageReference Include="xunit.v3" Version="4.0.0" />
+    <PackageReference Include="NSubstitute" Version="6.2.0" />
+    <PackageReference Include="System.Reflection.MetadataLoadContext" Version="10.0.0" />
+  </ItemGroup>
+
+</Project>

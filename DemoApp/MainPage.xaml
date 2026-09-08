@@ -83,7 +83,7 @@
                     <Label
                         FontAttributes="Bold"
                         FontSize="20"
-                        Text="Mauime Demo"
+                        Text="Me.Toolkit.Maui Demo"
                         TextColor="White" />
                     <Label
                         FontSize="12"
@@ -96,7 +96,7 @@
         <tabView:SfTabView Grid.Row="1" TabWidthMode="Default">
             <tabView:SfTabView.Items>
 
-                <!-- Mauime.Configuration -->
+                <!-- Me.Toolkit.Maui.Configuration -->
                 <tabView:SfTabItem Header="Config">
                     <tabView:SfTabItem.Content>
                         <Grid BindingContext="{Binding Configuration}" RowDefinitions="Auto,*">
@@ -121,7 +121,7 @@
                     </tabView:SfTabItem.Content>
                 </tabView:SfTabItem>
 
-                <!-- Mauime.Hosting -->
+                <!-- Me.Toolkit.Maui.Hosting -->
                 <tabView:SfTabItem Header="Hosting">
                     <tabView:SfTabItem.Content>
                         <ScrollView BindingContext="{Binding Hosting}">
@@ -129,7 +129,7 @@
 
                                 <Label
                                     Style="{StaticResource Blurb}"
-                                    Text="Without Mauime.Hosting this reports Production on every platform, always." />
+                                    Text="Without Me.Toolkit.Maui.Hosting this reports Production on every platform, always." />
 
                                 <Border Style="{StaticResource Card}">
                                     <VerticalStackLayout Spacing="8">
@@ -169,7 +169,7 @@
                     </tabView:SfTabItem.Content>
                 </tabView:SfTabItem>
 
-                <!-- Mauime.Nfc -->
+                <!-- Me.Toolkit.Maui.Nfc -->
                 <tabView:SfTabItem Header="NFC">
                     <tabView:SfTabItem.Content>
                         <Grid BindingContext="{Binding Nfc}" RowDefinitions="Auto,*">
@@ -207,7 +207,7 @@
                     </tabView:SfTabItem.Content>
                 </tabView:SfTabItem>
 
-                <!-- Mauime.WebHostPatch -->
+                <!-- Me.Toolkit.Maui.WebHostPatch -->
                 <tabView:SfTabItem Header="Web host">
                     <tabView:SfTabItem.Content>
                         <ScrollView BindingContext="{Binding WebHost}">

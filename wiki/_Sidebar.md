@@ -1,4 +1,4 @@
-**[Mauime](Home)**
+**[Me.Toolkit.Maui](Home)**
 
 **Repository**
 - [Building and Testing](Building-and-Testing)
